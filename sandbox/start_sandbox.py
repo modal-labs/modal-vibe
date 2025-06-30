@@ -54,5 +54,5 @@ def run_sandbox_server_with_tunnel(app: modal.App, image: modal.Image):
     return tunnel.url
 
 if __name__ == "__main__":
-    app = modal.App("likeable-sandbox-server")
+    app = modal.App("modal-vibe-sandbox-server")
     run_sandbox_server_with_tunnel.remote(app)

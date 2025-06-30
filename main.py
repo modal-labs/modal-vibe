@@ -21,7 +21,7 @@ image = (modal.Image.debian_slim()
     .add_local_dir("web", "/root/web")
     .add_local_dir("sandbox", "/root/sandbox")
 )
-app = modal.App(name="likeable-app", image=image)
+app = modal.App(name="modal-vibe", image=image)
 
 
 

@@ -30,7 +30,7 @@ display_html = """
   <title>Simple Landing Page</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+<body class="min-h-screen bg-gradient-to-br from-green-200 to-green-300 flex items-center justify-center">
   <div class="text-center">
     <h1 class="text-4xl font-bold">Hello World!</h1>
     <p class="text-gray-600">This is a simple landing page. To make edits, please enter a prompt on the right.</p>
