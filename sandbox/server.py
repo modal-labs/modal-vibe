@@ -22,7 +22,22 @@ app.add_middleware(
 )
 
 # Global state to track display text
-display_html = "<html><body><h1>Hello World</h1></body></html>"
+display_html = """
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Simple Landing Page</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
+  <div class="text-center">
+    <h1 class="text-4xl font-bold">Hello World!</h1>
+    <p class="text-gray-600">This is a simple landing page. To make edits, please enter a prompt on the right.</p>
+  </div>
+</body>
+</html>
+"""
 
 class EditRequest(BaseModel):
     html: str

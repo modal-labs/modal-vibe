@@ -4,16 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="/static/css/style.css" rel="stylesheet">
     <style>
         body {
-            background: radial-gradient(circle at 25% 25%, #ff6b6b, #ffd93d, #ff69b4);
+            background: radial-gradient(circle at 25% 25%, #ff69b4, #ff1493, #c71585);
             background-size: 10px 10px;
             background-image: 
-                radial-gradient(circle, rgba(255, 107, 107, 0.2) 1px, transparent 1px),
-                radial-gradient(circle, rgba(255, 217, 61, 0.2) 1px, transparent 1px),
-                radial-gradient(circle, rgba(255, 105, 180, 0.2) 1px, transparent 1px);
+                radial-gradient(circle, rgba(255, 105, 180, 0.2) 1px, transparent 1px),
+                radial-gradient(circle, rgba(255, 20, 147, 0.2) 1px, transparent 1px),
+                radial-gradient(circle, rgba(199, 21, 133, 0.2) 1px, transparent 1px);
             background-position: 0 0, 5px 5px, 10px 10px;
             background-repeat: repeat;
         }
