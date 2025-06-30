@@ -22,16 +22,16 @@ app.add_middleware(
 )
 
 # Global state to track display text
-display_text = "Hello World"
+display_html = "<html><body><h1>Hello World</h1></body></html>"
 
 class EditRequest(BaseModel):
-    text: str
+    html: str
 
 @app.post("/edit")
 async def edit_text(request: EditRequest):
-    global display_text
-    display_text = request.text
-    print(f"Text edited to: {display_text}")
+    global display_html
+    display_html = request.html
+    print(f"HTML edited to: {display_html}")
     return {"status": "ok"}
 
 @app.get("/heartbeat")
@@ -41,28 +41,9 @@ async def heartbeat():
 
 @app.get("/display", response_class=HTMLResponse)
 async def display():
-    global display_text
-    print(f"Displaying text: {display_text}")
-    html_content = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Display</title>
-        <style>
-            body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; }}
-            h1 {{ color: #333; }}
-        </style>
-    </head>
-    <body>
-        <h1>{display_text}</h1>
-        <p><em>Last updated: <span id="timestamp"></span></em></p>
-        <script>
-            document.getElementById('timestamp').textContent = new Date().toLocaleString();
-        </script>
-    </body>
-    </html>
-    """
-    return HTMLResponse(content=html_content)
+    global display_html
+    print(f"Displaying HTML: {display_html}")
+    return HTMLResponse(content=display_html)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000) 

@@ -1,99 +1,135 @@
 {% extends "base.html" %}
 
-{% block title %}Likeable - App Editor{% endblock %}
+{% block title %}Likeable – App Editor{% endblock %}
+
+{% block head %}
+<style>
+  /* You can add any small custom tweaks here */
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row">
-    <!-- Left side - Text input -->
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Edit Your App</h5>
-                <form id="editForm" class="mt-3">
-                    <div class="mb-3">
-                        <textarea class="form-control" id="textInput" rows="10" placeholder="Enter your edits here..."></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary">Apply Changes</button>
-                </form>
-            </div>
-        </div>
+<div class="flex flex-col lg:flex-row gap-6 p-6 h-[calc(100vh-100px)]">
+
+  <div class="flex-1">
+    <div class="bg-white shadow-md rounded-xl overflow-hidden h-full flex flex-col">
+      <div class="px-6 py-4 border-b">
+        <h2 class="text-2xl font-semibold text-gray-800">Edit Your App</h2>
+      </div>
+
+      <form id="editForm" class="flex-1 flex flex-col p-6">
+        <textarea
+          id="textInput"
+          rows="10"
+          placeholder="Enter your edits here…"
+          class="flex-1 resize-none border border-gray-300 rounded-lg p-4 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+        ></textarea>
+
+        <button
+          type="submit"
+          id="applyButton"
+          class="flex mt-4 h-16 bg-gradient-to-r from-red-500 to-pink-600 text-white font-medium py-3 px-6
+                 rounded-lg
+                 
+                 hover:bg-red-600 focus:outline-none focus:ring-2
+                 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200
+                 transform hover:scale-[1.01] active:scale-[0.98] shadow-md
+                 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none
+                 flex items-center justify-center gap-2"
+        >
+          <svg class="w-5 h-5 hidden" id="loadingSpinner" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path class="animate-spin origin-center" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span id="buttonText">Apply Changes</span>
+        </button>
+      </form>
     </div>
-    
-    <!-- Right side - Preview -->
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body">
-                <h5 class="card-title">Preview</h5>
-                <div class="ratio ratio-1x1">
-                    <iframe id="previewFrame" class="embed-responsive-item border" src="https://ifgmqzccpkz0cm.r401.modal.host/display"></iframe>
-                </div>
-            </div>
-        </div>
+  </div>
+
+  <!-- Right side: preview iframe -->
+  <div class="flex-1 h-[600px] lg:h-auto">
+    <div class="bg-white shadow-md rounded-xl overflow-hidden h-full">
+      <div class="px-6 py-4 border-b">
+        <h2 class="text-2xl font-semibold text-gray-800">Live Preview</h2>
+      </div>
+      <iframe
+        id="previewFrame"
+        src="/api/app/{{ app_id }}/display"
+        class="w-full h-full border-t border-gray-200"
+        title="App Preview"
+      ></iframe>
     </div>
+  </div>
+
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-const EXTERNAL_API_BASE = 'https://ifgmqzccpkz0cm.r401.modal.host';
+const APP_ID = '{{ app_id }}';
+
+function setLoading(isLoading) {
+    const button = document.getElementById('applyButton');
+    const spinner = document.getElementById('loadingSpinner');
+    const buttonText = document.getElementById('buttonText');
+    
+    button.disabled = isLoading;
+    spinner.classList.toggle('hidden', !isLoading);
+    buttonText.textContent = isLoading ? 'Updating...' : 'Apply Changes';
+}
 
 async function updateContent(text) {
     try {
-        const response = await fetch(`${EXTERNAL_API_BASE}/edit`, {
+        setLoading(true);
+        const res = await fetch(`/api/app/${APP_ID}/write`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ text: text })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text }),
         });
         
-        if (response.ok) {
-            document.getElementById('previewFrame').src = `${EXTERNAL_API_BASE}/display?t=${Date.now()}`;
+        if (res.ok) {
+            document.getElementById('previewFrame').src = `/api/app/${APP_ID}/display?t=${Date.now()}`;
         } else {
-            console.error('Failed to update content:', response.statusText);
+            console.error('Update failed:', res.statusText);
         }
-    } catch (error) {
-        console.error('Error updating content:', error);
+    } catch (err) {
+        console.error('Error:', err);
+    } finally {
+        setLoading(false);
     }
 }
 
-// Handle form submission
-document.getElementById('editForm').addEventListener('submit', async (e) => {
+document.getElementById('editForm').addEventListener('submit', async e => {
     e.preventDefault();
-    const text = document.getElementById('textInput').value;
-    await updateContent(text);
+    await updateContent(document.getElementById('textInput').value);
 });
 
-// Handle direct text input changes with debouncing
-let debounceTimer;
-document.getElementById('textInput').addEventListener('input', (e) => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => {
-        const text = e.target.value;
-        updateContent(text);
-    }, 500); // Wait 500ms after user stops typing
-});
+// Remove the debounce listener since we only want updates on button click
+document.getElementById('textInput').removeEventListener('input', () => {});
 
-// Health check ping to external API
 async function checkHealth() {
-    try {
-        const response = await fetch(`${EXTERNAL_API_BASE}/heartbeat`);
-        if (response.ok) {
-            console.log('External API is healthy');
-        }
-    } catch (error) {
-        console.error('External API health check failed:', error);
-    }
+  try {
+    const res = await fetch(`/api/app/${APP_ID}/ping`);
+    if (res.ok) console.log('API healthy');
+  } catch {}
 }
-
-// Check health every 30 seconds
 setInterval(checkHealth, 30000);
-checkHealth(); // Initial check
+checkHealth();
 
-// Initialize with current content
 document.addEventListener('DOMContentLoaded', () => {
-    // Load the display immediately
-    document.getElementById('previewFrame').src = `${EXTERNAL_API_BASE}/display`;
+  const iframe = document.getElementById('previewFrame');
+  iframe.src = `/api/app/${APP_ID}/display`;
+  iframe.onload = () => {
+    try {
+      const doc = iframe.contentDocument;
+      if (doc && !doc.querySelector('meta[name="viewport"]')) {
+        const m = doc.createElement('meta');
+        m.name = 'viewport';
+        m.content = 'width=device-width, initial-scale=1.0';
+        doc.head.appendChild(m);
+      }
+    } catch {}
+  };
 });
 </script>
-{% endblock %} 
+{% endblock %}
