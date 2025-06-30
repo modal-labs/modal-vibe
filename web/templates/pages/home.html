@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Likeable - Create Apps by Chatting with AI{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-4 mb-4">Build something Likeable</h1>
+    <p class="lead mb-5">Create apps and websites by chatting with AI</p>
+    <button onclick="createApp()" class="btn btn-primary btn-lg">Create App</button>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function createApp() {
+    try {
+        const response = await fetch('/api/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await response.json();
+        if (data.app_id) {
+            window.location.href = `/app/${data.app_id}`;
+        }
+    } catch (error) {
+        console.error('Error creating app:', error);
+    }
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}Likeable - App Editor{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Left side - Text input -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Edit Your App</h5>
+                <form id="editForm" class="mt-3">
+                    <div class="mb-3">
+                        <textarea class="form-control" id="textInput" rows="10" placeholder="Enter your edits here..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Apply Changes</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right side - Preview -->
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Preview</h5>
+                <div class="ratio ratio-1x1">
+                    <iframe id="previewFrame" class="embed-responsive-item border" src="https://ifgmqzccpkz0cm.r401.modal.host/display"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const EXTERNAL_API_BASE = 'https://ifgmqzccpkz0cm.r401.modal.host';
+
+async function updateContent(text) {
+    try {
+        const response = await fetch(`${EXTERNAL_API_BASE}/edit`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ text: text })
+        });
+        
+        if (response.ok) {
+            document.getElementById('previewFrame').src = `${EXTERNAL_API_BASE}/display?t=${Date.now()}`;
+        } else {
+            console.error('Failed to update content:', response.statusText);
+        }
+    } catch (error) {
+        console.error('Error updating content:', error);
+    }
+}
+
+// Handle form submission
+document.getElementById('editForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = document.getElementById('textInput').value;
+    await updateContent(text);
+});
+
+// Handle direct text input changes with debouncing
+let debounceTimer;
+document.getElementById('textInput').addEventListener('input', (e) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+        const text = e.target.value;
+        updateContent(text);
+    }, 500); // Wait 500ms after user stops typing
+});
+
+// Health check ping to external API
+async function checkHealth() {
+    try {
+        const response = await fetch(`${EXTERNAL_API_BASE}/heartbeat`);
+        if (response.ok) {
+            console.log('External API is healthy');
+        }
+    } catch (error) {
+        console.error('External API health check failed:', error);
+    }
+}
+
+// Check health every 30 seconds
+setInterval(checkHealth, 30000);
+checkHealth(); // Initial check
+
+// Initialize with current content
+document.addEventListener('DOMContentLoaded', () => {
+    // Load the display immediately
+    document.getElementById('previewFrame').src = `${EXTERNAL_API_BASE}/display`;
+});
+</script>
+{% endblock %} 
