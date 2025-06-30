@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link href="https://api.fontshare.com/v2/css?f[]=degular-display@400,700,500,600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['degular-display', 'ui-sans-serif', 'system-ui', 'sans-serif', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji'],
+                    },
+                }
+            }
+        }
+    </script>
+    <link href="/static/css/style.css" rel="stylesheet">
+    <link href="/static/css/bouncing-logo.css" rel="stylesheet">
+    <style>
+        :root {
+            --modal-bg: #000;
+            --modal-text: #f7f8f8;
+            --modal-accent: #7fe664;
+            --modal-secondary: #8491a5;
+        }
+        body {
+            background: var(--modal-bg);
+            color: var(--modal-text);
+            font-family: degular-display, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+            letter-spacing: -0.025em;
+        }
+        .gradient-text {
+            background: linear-gradient(90deg, #7fe664 0%, #7fe664 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
+    {% block head %}{% endblock %}
+
+</head>
+<body class="min-h-screen">
+    <div class="bouncing-logo-container">
+        <img id="bouncing-logo" src="/static/logo.svg" alt="Bouncing Logo" />
+    </div>
+    <nav class="border-b border-gray-800/40">
+        <div class="container mx-auto px-4 pt-4">
+            <div class="flex justify-between items-center py-4 pl-4 bg-white/10 rounded-xl">
+                <a href="/" class="text-xl font-semibold text-white hover:text-gray-300 flex items-center gap-2">
+                    <img src="/static/logo.svg" class="w-6 h-6" />
+                    <span class="gradient-text text-white font-medium tracking-tight">Modal Vibe</span>
+                </a>
+                <button class="md:hidden flex items-center px-3 py-2 border rounded text-gray-200 border-gray-600/40 hover:text-white hover:border-gray-500">
+                    <svg class="fill-current h-3 w-3" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <title>Menu</title>
+                        <path d="M0 3h20v2H0V3zm0 6h20v2H0V9zm0 6h20v2H0v-2z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto px-4 mt-8">
+        {% block content %}{% endblock %}
+    </div>
+
+    {% block scripts %}{% endblock %}
+    <script src="/static/js/bouncing-logo.js"></script>
+</body>
+</html> 

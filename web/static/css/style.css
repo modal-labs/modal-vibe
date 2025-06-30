@@ -1,0 +1,46 @@
+body {
+    background-color: var(--modal-bg);
+    color: var(--modal-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.navbar {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    background: rgba(0, 2, 18, 0.8);
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    height: 100%;
+}
+
+.ratio {
+    min-height: 500px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+#previewFrame {
+    background: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+/* Modal-style button */
+.btn-modal {
+    background: linear-gradient(90deg, #00f10f 0%, #00ff44 100%);
+    color: #000212;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.btn-modal:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 241, 15, 0.2);
+} 
