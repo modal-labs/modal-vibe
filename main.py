@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from utils.llm import generate_response
 import modal
 import uuid
@@ -7,6 +8,7 @@ from dotenv import load_dotenv
 import anthropic
 import asyncio
 import httpx
+from pydantic import BaseModel
 
 load_dotenv()
 client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
@@ -25,10 +27,20 @@ image = (modal.Image.debian_slim()
 )
 app = modal.App(name="modal-vibe", image=image)
 
+class MessageType(Enum):
+    USER = "user"
+    ASSISTANT = "assistant"
+
+    def __str__(self):
+        return self.value
+
+class Message(BaseModel):
+    content: str
+    type: MessageType
 
 class App:
     id: str
-    message_history: list[str]
+    message_history: list[Message]
     current_html: str
     sandbox_tunnel_url: str
     _ready: bool
@@ -80,10 +92,30 @@ class App:
         DO NOT include any other text in your response. Only the HTML.
         """
         response = generate_response(client, prompt)
-        self.message_history.append(message)
+        self.message_history.append(Message(content=message, type=MessageType.USER))
         self.current_html = response
         print(f"Generated edit: {response}")
         return response
+
+    def explain_edit(self, message: str, original_html: str, new_html: str):
+        explaination = generate_response(client, f"""
+        You generated the following HTML edit to the prompt:
+
+        Prompt: {message}
+
+        Original HTML: {original_html}
+
+        New HTML: {new_html}
+
+        Give a response that summarizes the changes you made. An example of a good response is:
+        - "Sounds good! I've made the changes you requested. Yay :D"
+        - "I colored the background red and added a new button. Let me know if you want anything else!"
+        - "I updated the font to a more modern one and added a new section. Cheers!!"
+
+
+        """, model="claude-3-5-haiku-20241022")   
+        self.message_history.append(Message(content=explaination, type=MessageType.ASSISTANT))
+        return explaination
 
     async def _wait_for_sandbox_alive(self, max_attempts: int = 30, delay: float = 2.0):
         """Wait for the sandbox server to be ready by polling the heartbeat endpoint"""
@@ -165,10 +197,9 @@ def fastapi_app():
         try:
             data = await request.json()
             app = apps[app_id]
-            print(f"Writing to relay at: {edit_url} with data: {data}")
             async with httpx.AsyncClient() as client:
                 edit = await app.generate_edit(data["text"], is_init=is_init)
-                print(f"Edit: {edit}")
+                # TODO: explain at the same time of generation
                 response = await client.post(
                     edit_url,
                     json={
@@ -177,6 +208,8 @@ def fastapi_app():
                     timeout=60.0
                 )
                 print(f"Write response status: {response.status_code}")
+                if not is_init:
+                    app.explain_edit(data["text"], app.current_html, str(edit))
                 return JSONResponse(response.json(), status_code=response.status_code)
         except Exception as e:
             print(f"Error writing to relay with data: {data}: {str(e)}")
@@ -208,11 +241,9 @@ def fastapi_app():
     async def display_app(app_id: str):
         app = apps[app_id]
         
-        # Wait for sandbox to be ready
         try:
             await app.wait_for_ready()
         except TimeoutError as e:
-            # Return a more user-friendly error page
             html_content = f"""
             <!DOCTYPE html>
             <html>

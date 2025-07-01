@@ -22,9 +22,15 @@
         {% if message_history %}
           <div class="space-y-3">
             {% for message in message_history %}
-              <div class="bg-white/10 rounded-lg p-4 border border-white/10">
-                <p class="text-sm text-gray-200 leading-relaxed">{{ message }}</p>
-              </div>
+              {% if message.type == "user" %}
+                <div class="flex bg-green-900/10 rounded-lg p-4 border border-white/10">
+                  <p class="text-sm text-gray-200 leading-relaxed">{{ message }}</p>
+                </div>
+              {% else %}
+                <div class="flex bg-white/10 rounded-lg p-4 border border-white/10 justify-end">
+                  <p class="text-sm text-green-200">{{ message }}</p>
+                </div>
+              {% endif %}
             {% endfor %}
           </div>
         {% else %}

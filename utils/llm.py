@@ -1,7 +1,6 @@
-
-def generate_response(client, prompt):
+def generate_response(client, prompt, model="claude-opus-4-20250514"):
     message = client.messages.create(
-        model="claude-opus-4-20250514",
+        model=model,
         messages=[{"role": "user", "content": prompt}],
         max_tokens=4096,
     )
