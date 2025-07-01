@@ -18,13 +18,12 @@
                     <div class="text-sm text-[#8491a5] ml-2 tracking-tight">Create New App</div>
                 </div>
                 
-                <!-- Fake Text Input -->
                 <div class="relative mb-6">
                     <input 
                         type="text" 
+                        id="appPrompt"
                         placeholder="What's the vibe today?" 
-                        class="w-full px-4 py-3 border border-[rgba(255,255,255,0.1)] rounded-lg bg-[rgba(255,255,255,0.02)] text-gray-300 cursor-default placeholder-gray-500 tracking-tight focus:outline-none"
-                        readonly
+                        class="w-full px-4 py-3 border border-[rgba(255,255,255,0.1)] rounded-lg bg-[rgba(255,255,255,0.02)] text-gray-300 placeholder-gray-500 tracking-tight focus:outline-none"
                     >
                     <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
                         <svg class="w-5 h-5 text-[#8491a5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,12 +32,10 @@
                     </div>
                 </div>
                 
-                <!-- Create Button -->
                 <button id="createAppBtn" onclick="createApp()" class="btn-modal w-full py-3 px-8 rounded-lg text-lg transition duration-200 font-medium tracking-tight">
                     Create App
                 </button>
                 
-                <!-- Loading Spinner -->
                 <div id="spinner" class="hidden">
                     <div class="flex items-center justify-center space-x-3 mt-4">
                         <div class="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-[#00f10f]"></div>
@@ -89,6 +86,8 @@
 async function createApp() {
     const button = document.getElementById('createAppBtn');
     const spinner = document.getElementById('spinner');
+    const promptInput = document.getElementById('appPrompt');
+    const prompt = promptInput.value.trim() || "A simple hello world landing page";
     
     button.style.display = 'none';
     spinner.classList.remove('hidden');
@@ -101,6 +100,13 @@ async function createApp() {
             }
         });
         const data = await response.json();
+        const response_two = await fetch(`/api/app/${data.app_id}/write`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ text: prompt, is_init: true })
+        });
         if (data.app_id) {
             window.location.href = `/app/${data.app_id}`;
         }

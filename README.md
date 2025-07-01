@@ -5,6 +5,7 @@ Each application lives on a Modal Sandbox and contains a webserver accessible th
 
 
 ## Structure
+- `main.py` is the entrypoint to running Modal Vibe on Modal
 - `web` contains the Modal Vibe website that users see and interact with, as well as the api server that manages Sandboxes.
 - `sandbox` contains a small HTTP server that gets put inside every Sandbox that's created, as well as some sandbox lifecycle management code.
 

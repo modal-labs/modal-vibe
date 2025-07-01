@@ -1,4 +1,5 @@
 from datetime import datetime
+from utils.llm import generate_response
 import modal
 import uuid
 import os
@@ -20,9 +21,9 @@ image = (modal.Image.debian_slim()
     )
     .add_local_dir("web", "/root/web")
     .add_local_dir("sandbox", "/root/sandbox")
+    .add_local_dir("utils", "/root/utils")
 )
 app = modal.App(name="modal-vibe", image=image)
-
 
 
 class App:
@@ -39,10 +40,52 @@ class App:
         self._ready = False
         from sandbox.start_sandbox import run_sandbox_server_with_tunnel
         self.sandbox_tunnel_url = run_sandbox_server_with_tunnel(app=app, image=image)
-        # Start health check in background
-        asyncio.create_task(self._wait_for_ready())
+        asyncio.create_task(self._wait_for_sandbox_alive())
 
-    async def _wait_for_ready(self, max_attempts: int = 30, delay: float = 2.0):
+    async def wait_for_ready(self, timeout: float = 300.0):
+        """Wait for the sandbox server to be ready, with a timeout"""
+        start_time = asyncio.get_event_loop().time()
+        while not self._ready:
+            if asyncio.get_event_loop().time() - start_time > timeout:
+                raise TimeoutError(f"Sandbox server {self.id} did not become ready within {timeout} seconds")
+            await asyncio.sleep(0.5)
+
+    async def generate_edit(self, message: str, is_init: bool = False):
+        await self.wait_for_ready()
+        html_gen_prompt = f"""
+        The existing HTML you are working with is this.
+        {self.current_html}
+
+        You are asked to make the following changes to the HTML:
+        {message}
+        """ if not is_init else f"""
+        You are asked to generate an HTML that is a good example of the prompt.
+        Prompt: {message}
+        """
+
+        prompt = f"""
+        You are Jeffrey Zeldman's top web designer. You are given the following prompt and your job is to generate an HTML that is a good example of the prompt.
+        Prompt: {message}
+
+        {html_gen_prompt}
+
+
+        RESPONSE FORMAT:
+        <html>
+            <body>
+                <h1>Hello World</h1>
+            </body>
+        </html>
+
+        DO NOT include any other text in your response. Only the HTML.
+        """
+        response = generate_response(client, prompt)
+        self.message_history.append(message)
+        self.current_html = response
+        print(f"Generated edit: {response}")
+        return response
+
+    async def _wait_for_sandbox_alive(self, max_attempts: int = 30, delay: float = 2.0):
         """Wait for the sandbox server to be ready by polling the heartbeat endpoint"""
         heartbeat_url = f"{self.sandbox_tunnel_url}/heartbeat"
         
@@ -65,56 +108,6 @@ class App:
                 await asyncio.sleep(delay)
         
         print(f"❌ Sandbox server {self.id} failed to become ready after {max_attempts} attempts")
-
-    async def wait_for_ready(self, timeout: float = 300.0):
-        """Wait for the sandbox server to be ready, with a timeout"""
-        start_time = asyncio.get_event_loop().time()
-        while not self._ready:
-            if asyncio.get_event_loop().time() - start_time > timeout:
-                raise TimeoutError(f"Sandbox server {self.id} did not become ready within {timeout} seconds")
-            await asyncio.sleep(0.5)
-
-    def _generate_response(self, prompt):
-        message = client.messages.create(
-            model="claude-opus-4-20250514",
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=4096,
-        )
-        return message.content[0].text
-
-    def generate_edit(self, message: str):
-        html_gen_prompt = f"""
-        The existing HTML you are working with is this.
-        {self.current_html}
-
-        You are asked to make the following changes to the HTML:
-        {message}
-        """ if self.current_html != "" else f"""
-        You are asked to generate an HTML that is a good example of the prompt.
-        Prompt: {message}
-        """
-
-        prompt = f"""
-        You are Jeffrey Zeldman's top web designer. You are given the following prompt and your job is to generate an HTML that is a good example of the prompt.
-        Prompt: {message}
-
-        {html_gen_prompt}
-
-
-        RESPONSE FORMAT:
-        <html>
-            <body>
-                <h1>Hello World</h1>
-            </body>
-        </html>
-
-        DO NOT include any other text in your response. Only the HTML.
-        """
-        response = self._generate_response(prompt)
-        self.message_history.append(message)
-        self.current_html = response
-        print(f"Generated edit: {response}")
-        return response
 
 
 @app.function(image=image, secrets=[modal.Secret.from_name("anthropic-secret")])
@@ -165,21 +158,16 @@ def fastapi_app():
 
     @web_app.post("/api/app/{app_id}/write")
     async def write_app(app_id: str, request: Request):
+        data = await request.json()
+        is_init = data.get("is_init", False)
         app = apps[app_id]
-        
-        # Wait for sandbox to be ready
-        try:
-            await app.wait_for_ready()
-        except TimeoutError as e:
-            return JSONResponse({"status": "error", "message": str(e)}, status_code=503)
-        
         edit_url = f"{app.sandbox_tunnel_url}/edit"
         try:
             data = await request.json()
             app = apps[app_id]
             print(f"Writing to relay at: {edit_url} with data: {data}")
             async with httpx.AsyncClient() as client:
-                edit = app.generate_edit(data["text"])
+                edit = await app.generate_edit(data["text"], is_init=is_init)
                 print(f"Edit: {edit}")
                 response = await client.post(
                     edit_url,
@@ -197,8 +185,6 @@ def fastapi_app():
     @web_app.get("/api/app/{app_id}/ping")
     async def ping_app(app_id: str):
         app = apps[app_id]
-        
-        # Wait for sandbox to be ready
         try:
             await app.wait_for_ready()
         except TimeoutError as e:
