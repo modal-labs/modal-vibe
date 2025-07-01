@@ -1,18 +1,15 @@
+"""Main entrypoint that runs the FastAPI controller that serves the web app and manages the sandbox apps."""
+
 from datetime import datetime
-from enum import Enum
-from utils.llm import generate_response
+from core.llm import get_client
+from core.models import SandboxApp
 import modal
 import uuid
-import os
 from dotenv import load_dotenv
-import anthropic
 import asyncio
-import httpx
-from pydantic import BaseModel
-from multiprocessing import Process
 
 load_dotenv()
-client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+client = get_client()
 image = (modal.Image.debian_slim()
     .pip_install(
         "fastapi[standard]",
@@ -24,144 +21,9 @@ image = (modal.Image.debian_slim()
     )
     .add_local_dir("web", "/root/web")
     .add_local_dir("sandbox", "/root/sandbox")
-    .add_local_dir("utils", "/root/utils")
+    .add_local_dir("core", "/root/core")
 )
 app = modal.App(name="modal-vibe", image=image)
-
-class MessageType(Enum):
-    USER = "user"
-    ASSISTANT = "assistant"
-
-    def __str__(self):
-        return self.value
-
-class Message(BaseModel):
-    content: str
-    type: MessageType
-
-class App:
-    id: str
-    message_history: list[Message]
-    current_html: str
-    sandbox_tunnel_url: str
-    _ready: bool
-
-    def __init__(self, id: str):
-        self.id = id
-        self.message_history = []
-        self.current_html = ""
-        self._ready = False
-        from sandbox.start_sandbox import run_sandbox_server_with_tunnel
-        self.sandbox_tunnel_url = run_sandbox_server_with_tunnel(app=app, image=image)
-        asyncio.create_task(self._wait_for_sandbox_alive())
-
-    async def wait_for_ready(self, timeout: float = 300.0):
-        """Wait for the sandbox server to be ready, with a timeout"""
-        start_time = asyncio.get_event_loop().time()
-        while not self._ready:
-            if asyncio.get_event_loop().time() - start_time > timeout:
-                raise TimeoutError(f"Sandbox server {self.id} did not become ready within {timeout} seconds")
-            await asyncio.sleep(0.5)
-
-    async def _generate_edit(self, message: str, is_init: bool = False):
-        await self.wait_for_ready()
-        html_gen_prompt = f"""
-        The existing HTML you are working with is this.
-        {self.current_html}
-
-        You are asked to make the following changes to the HTML:
-        {message}
-        """ if not is_init else f"""
-        You are asked to generate an HTML that is a good example of the prompt.
-        Prompt: {message}
-        """
-
-        prompt = f"""
-        You are Jeffrey Zeldman's top web designer. You are given the following prompt and your job is to generate an HTML that is a good example of the prompt.
-        Prompt: {message}
-
-        {html_gen_prompt}
-
-
-        RESPONSE FORMAT:
-        <html>
-            <body>
-                <h1>Hello World</h1>
-            </body>
-        </html>
-
-        DO NOT include any other text in your response. Only the HTML.
-        """
-        response = generate_response(client, prompt)
-        self.message_history.append(Message(content=message, type=MessageType.USER))
-        self.current_html = response
-        print(f"Generated edit: {response}")
-        return response
-    
-    async def edit(
-        self, 
-        message: str, 
-        is_init: bool = False,
-    ) -> httpx.Response:
-        original_html = self.current_html
-        edit_url = f"{self.sandbox_tunnel_url}/edit"
-        async with httpx.AsyncClient() as client:
-            edit = await self._generate_edit(message, is_init=is_init)
-            self.explain_edit(message, original_html, self.current_html, is_init)
-            response = await client.post(
-                edit_url,
-                json={
-                    "html": str(edit),
-                },
-                timeout=60.0
-            )
-            print(f"Write response status: {response.status_code}")
-            return response
-
-    def explain_edit(self, message: str, original_html: str, new_html: str, is_init: bool = False):
-        explaination = generate_response(client, f"""
-        You generated the following HTML edit to the prompt:
-
-        Prompt: {message}
-
-        {f"Original HTML: {original_html}" if not is_init else ""}
-       
-        Generated HTML: {new_html}
-    
-
-        Give a response that summarizes the changes you made. An example of a good response is:
-        - "Sounds good! I've made the changes you requested. Yay :D"
-        - "I colored the background red and added a new button. Let me know if you want anything else!"
-        - "I updated the font to a more modern one and added a new section. Cheers!!"
-
-        Be as concise as possible, but always be friendly!
-        """, model="claude-3-5-haiku-20241022", max_tokens=256)   
-        self.message_history.append(Message(content=explaination, type=MessageType.ASSISTANT))
-        return explaination
-
-    async def _wait_for_sandbox_alive(self, max_attempts: int = 30, delay: float = 2.0):
-        """Wait for the sandbox server to be ready by polling the heartbeat endpoint"""
-        heartbeat_url = f"{self.sandbox_tunnel_url}/heartbeat"
-        
-        for attempt in range(max_attempts):
-            try:
-                print(f"Health check attempt {attempt + 1}/{max_attempts} for {self.id}")
-                async with httpx.AsyncClient() as client:
-                    response = await client.get(
-                        heartbeat_url,
-                        timeout=30.0
-                    )
-                    if response.status_code == 200:
-                        print(f"✅ Sandbox server {self.id} is ready!")
-                        self._ready = True
-                        return
-            except Exception as e:
-                print(f"Health check attempt {attempt + 1} failed: {str(e)}")
-            
-            if attempt < max_attempts - 1:
-                await asyncio.sleep(delay)
-        
-        print(f"❌ Sandbox server {self.id} failed to become ready after {max_attempts} attempts")
 
 
 @app.function(image=image, secrets=[modal.Secret.from_name("anthropic-secret")])
@@ -175,12 +37,44 @@ def fastapi_app():
     import httpx
     
     apps = {}
-
-    web_app = FastAPI()
     
+    web_app = FastAPI()
     web_app.mount("/static", StaticFiles(directory="/root/web/static"), name="static")
     
     templates = Jinja2Templates(directory="/root/web/templates")
+
+    def _get_app_or_raise(app_id: str) -> SandboxApp:
+        if app_id not in apps:
+            raise HTTPException(status_code=404, detail="App not found")
+        return apps[app_id]
+    
+    async def _cleanup_dead_sandboxes():
+        """Check all sandboxes and remove dead ones from the apps dictionary"""
+        dead_apps = []
+        for app_id, sandbox_app in apps.items():
+            try:
+                if not await sandbox_app.is_alive():
+                    print(f"🧹 Removing dead sandbox: {app_id}")
+                    dead_apps.append(app_id)
+            except Exception as e:
+                print(f"Error checking sandbox {app_id}: {str(e)}")
+                dead_apps.append(app_id)
+        
+        for app_id in dead_apps:
+            del apps[app_id]
+            print(f"✅ Removed dead sandbox: {app_id}")
+    
+    async def background_cleanup_task(interval: float = 60.0):
+        while True:
+            try:
+                await _cleanup_dead_sandboxes()
+            except Exception as e:
+                print(f"Error in background cleanup: {e}")
+            await asyncio.sleep(interval)
+
+    @web_app.on_event("startup")
+    async def start_background_cleanup():
+        asyncio.create_task(background_cleanup_task())
 
     @web_app.exception_handler(404)
     async def not_found_handler(request: Request, exc):
@@ -189,11 +83,14 @@ def fastapi_app():
             context={"request": request},
             status_code=404
         )
-
-    def _get_app_or_raise(app_id: str) -> App:
-        if app_id not in apps:
-            raise HTTPException(status_code=404, detail="App not found")
-        return apps[app_id]
+    
+    @web_app.exception_handler(503)
+    async def service_unavailable_handler(request: Request, exc):
+        return templates.TemplateResponse(
+            name="pages/503.html",
+            context={"request": request},
+            status_code=503
+        )
 
     @web_app.get("/")
     async def home(request: Request):
@@ -202,15 +99,6 @@ def fastapi_app():
             name="pages/home.html",
             context={"request": request, "apps": app_list}
         )
-
-    @web_app.post("/api/create")
-    async def create_app(request: Request):
-        data = await request.json()
-        time = datetime.now().strftime("%Y%m%d%H%M%S")
-        app_id = str(uuid.uuid4()) + f"_{time}"
-        apps[app_id] = App(app_id)
-        await apps[app_id].edit(data["prompt"], is_init=True)
-        return JSONResponse({"app_id": app_id})
 
     @web_app.get("/app/{app_id}")
     async def app_page(request: Request, app_id: str):
@@ -224,6 +112,15 @@ def fastapi_app():
                 "message_history": app.message_history
             }
         )
+
+    @web_app.post("/api/create")
+    async def create_app(request: Request):
+        data = await request.json()
+        time = datetime.now().strftime("%Y%m%d%H%M%S")
+        app_id = str(uuid.uuid4()) + f"_{time}"
+        apps[app_id] = SandboxApp(app_id, app, image, client)
+        await apps[app_id].edit(data["prompt"], is_init=True)
+        return JSONResponse({"app_id": app_id})
 
     @web_app.post("/api/app/{app_id}/write")
     async def write_app(app_id: str, request: Request):
@@ -339,23 +236,6 @@ def fastapi_app():
                     raise Exception(f"Relay server returned {response.status_code}")
         except Exception as e:
             print(f"Error connecting to relay: {str(e)}")
-            # Fallback HTML in case relay is down
-            html_content = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Display - Error</title>
-                <style>
-                    body {{ font-family: Arial, sans-serif; text-align: center; padding: 50px; color: #666; }}
-                </style>
-            </head>
-            <body>
-                <h1>Service Unavailable</h1>
-                <p>Cannot connect to app server: {str(e)}</p>
-                <p><small>Attempted URL: {display_url}</small></p>
-            </body>
-            </html>
-            """
-            return HTMLResponse(content=html_content, status_code=503)
+            raise HTTPException(status_code=503, detail="Service Unavailable")
 
     return web_app

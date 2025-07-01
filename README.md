@@ -5,12 +5,13 @@ Each application lives on a Modal Sandbox and contains a webserver accessible th
 
 
 ## Structure
-- `main.py` is the entrypoint to running Modal Vibe on Modal
-- `web` contains the Modal Vibe website that users see and interact with, as well as the api server that manages Sandboxes.
+- `main.py` is the entrypoint that runs the FastAPI controller that serves the web app and manages the sandbox apps.
+- `core` contains the logic for `SandboxApp` model and LLM logic.
 - `sandbox` contains a small HTTP server that gets put inside every Sandbox that's created, as well as some sandbox lifecycle management code.
+- `web` contains the Modal Vibe website that users see and interact with, as well as the api server that manages Sandboxes.
+
 
 ## How to run
-
 Set-up the local environment.
 
 ```bash
@@ -23,14 +24,14 @@ To deploy to Modal, copy the `.env.example` and add your `ANTHROPIC_API_KEY`. Al
 Then, run the following code block:
 
 ```bash
-MODAL_PROFILE=modal-labs modal deploy --env=joy-dev main.py
+MODAL_PROFILE=modal-labs modal deploy --env=joy-dev app/main.py
 ```
 
 ### Local Development
 
 Run an example sandbox HTTP server:
 ```bash
-MODAL_PROFILE=modal-labs python sandbox/server.py --env=joy-dev
+MODAL_PROFILE=modal-labs python app/sandbox/server.py --env=joy-dev
 ```
 
 Run the webserver locally for fast development:

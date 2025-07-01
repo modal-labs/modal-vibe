@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Likeable – App Editor{% endblock %}
+{% block title %}Modal Vibe – App Editor{% endblock %}
 
 {% block head %}
 <style>
@@ -125,7 +125,6 @@ async function updateContent(text) {
         });
         
         if (res.ok) {
-            // Refresh the page to show updated message history
             window.location.reload();
         } else {
             console.error('Update failed:', res.statusText);
@@ -142,7 +141,6 @@ document.getElementById('editForm').addEventListener('submit', async e => {
     await updateContent(document.getElementById('textInput').value);
 });
 
-// Remove the debounce listener since we only want updates on button click
 document.getElementById('textInput').removeEventListener('input', () => {});
 
 async function checkHealth(updateUI = false) {
@@ -194,17 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 });
 
-setInterval(() => {
-  const iframe = document.getElementById('previewFrame');
-  if (iframe) {
-    iframe.style.opacity = '0'; // Start fade out
-    setTimeout(() => {
-      iframe.src = `/api/app/${APP_ID}/display?ts=${Date.now()}`;
-    }, 150); // Wait for fade out before reload
-  }
-}, 5000);
 
-// Fade in when iframe loads
 const previewFrame = document.getElementById('previewFrame');
 if (previewFrame) {
   previewFrame.addEventListener('load', () => {
