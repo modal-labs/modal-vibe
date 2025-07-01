@@ -1,7 +1,7 @@
 """Main entrypoint that runs the FastAPI controller that serves the web app and manages the sandbox apps."""
 
 from datetime import datetime
-from core.llm import get_client
+from core.llm import get_llm_client
 from core.models import SandboxApp
 import modal
 import uuid
@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import asyncio
 
 load_dotenv()
-client = get_client()
+llm_client = get_llm_client()
 image = (modal.Image.debian_slim()
     .pip_install(
         "fastapi[standard]",
@@ -37,7 +37,7 @@ def fastapi_app():
     import httpx
     
     apps = {}
-    
+
     web_app = FastAPI()
     web_app.mount("/static", StaticFiles(directory="/root/web/static"), name="static")
     
@@ -118,7 +118,7 @@ def fastapi_app():
         data = await request.json()
         time = datetime.now().strftime("%Y%m%d%H%M%S")
         app_id = str(uuid.uuid4()) + f"_{time}"
-        apps[app_id] = SandboxApp(app_id, app, image, client)
+        apps[app_id] = SandboxApp(app_id, app, image, llm_client)
         await apps[app_id].edit(data["prompt"], is_init=True)
         return JSONResponse({"app_id": app_id})
 
@@ -163,61 +163,7 @@ def fastapi_app():
         try:
             await app.wait_for_ready()
         except TimeoutError as e:
-            html_content = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Loading...</title>
-                <style>
-                    body {{ 
-                        font-family: Arial, sans-serif; 
-                        text-align: center; 
-                        padding: 50px; 
-                        color: #666;
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                        min-height: 100vh;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                    }}
-                    .loading-container {{
-                        background: rgba(30, 41, 59, 0.95);
-                        padding: 40px;
-                        border-radius: 10px;
-                        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-                    }}
-                    .spinner {{
-                        border: 4px solid #f3f3f3;
-                        border-top: 4px solid #667eea;
-                        border-radius: 50%;
-                        width: 40px;
-                        height: 40px;
-                        animation: spin 1s linear infinite;
-                        margin: 0 auto 20px;
-                    }}
-                    @keyframes spin {{
-                        0% {{ transform: rotate(0deg); }}
-                        100% {{ transform: rotate(360deg); }}
-                    }}
-                </style>
-            </head>
-            <body>
-                <div class="loading-container">
-                    <div class="spinner"></div>
-                    <h2>Starting your app...</h2>
-                    <p>Please wait while we initialize your sandbox environment.</p>
-                    <p><small>This usually takes 10-30 seconds</small></p>
-                </div>
-                <script>
-                    // Auto-refresh every 5 seconds
-                    setTimeout(() => {{
-                        window.location.reload();
-                    }}, 5000);
-                </script>
-            </body>
-            </html>
-            """
-            return HTMLResponse(content=html_content, status_code=503)
+            raise HTTPException(status_code=503, detail="Service Unavailable")
         
         display_url = f"{app.sandbox_tunnel_url}/display"
         print(f"Attempting to fetch display from: {display_url}")
