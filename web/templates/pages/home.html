@@ -97,16 +97,10 @@ async function createApp() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({ prompt })
         });
         const data = await response.json();
-        const response_two = await fetch(`/api/app/${data.app_id}/write`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ text: prompt, is_init: true })
-        });
         if (data.app_id) {
             window.location.href = `/app/${data.app_id}`;
         }

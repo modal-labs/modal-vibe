@@ -9,6 +9,7 @@ import anthropic
 import asyncio
 import httpx
 from pydantic import BaseModel
+from multiprocessing import Process
 
 load_dotenv()
 client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
@@ -62,7 +63,7 @@ class App:
                 raise TimeoutError(f"Sandbox server {self.id} did not become ready within {timeout} seconds")
             await asyncio.sleep(0.5)
 
-    async def generate_edit(self, message: str, is_init: bool = False):
+    async def _generate_edit(self, message: str, is_init: bool = False):
         await self.wait_for_ready()
         html_gen_prompt = f"""
         The existing HTML you are working with is this.
@@ -96,16 +97,37 @@ class App:
         self.current_html = response
         print(f"Generated edit: {response}")
         return response
+    
+    async def edit(
+        self, 
+        message: str, 
+        is_init: bool = False,
+    ) -> httpx.Response:
+        original_html = self.current_html
+        edit_url = f"{self.sandbox_tunnel_url}/edit"
+        async with httpx.AsyncClient() as client:
+            edit = await self._generate_edit(message, is_init=is_init)
+            self.explain_edit(message, original_html, self.current_html, is_init)
+            response = await client.post(
+                edit_url,
+                json={
+                    "html": str(edit),
+                },
+                timeout=60.0
+            )
+            print(f"Write response status: {response.status_code}")
+            return response
 
-    def explain_edit(self, message: str, original_html: str, new_html: str):
+    def explain_edit(self, message: str, original_html: str, new_html: str, is_init: bool = False):
         explaination = generate_response(client, f"""
         You generated the following HTML edit to the prompt:
 
         Prompt: {message}
 
-        Original HTML: {original_html}
-
-        New HTML: {new_html}
+        {f"Original HTML: {original_html}" if not is_init else ""}
+       
+        Generated HTML: {new_html}
+    
 
         Give a response that summarizes the changes you made. An example of a good response is:
         - "Sounds good! I've made the changes you requested. Yay :D"
@@ -113,7 +135,7 @@ class App:
         - "I updated the font to a more modern one and added a new section. Cheers!!"
 
 
-        """, model="claude-3-5-haiku-20241022")   
+        """, model="claude-3-5-haiku-20241022", max_tokens=512)   
         self.message_history.append(Message(content=explaination, type=MessageType.ASSISTANT))
         return explaination
 
@@ -160,6 +182,19 @@ def fastapi_app():
     
     templates = Jinja2Templates(directory="/root/web/templates")
 
+    @web_app.exception_handler(404)
+    async def not_found_handler(request: Request, exc):
+        return templates.TemplateResponse(
+            name="pages/404.html",
+            context={"request": request},
+            status_code=404
+        )
+
+    def _get_app_or_raise(app_id: str) -> App:
+        if app_id not in apps:
+            raise HTTPException(status_code=404, detail="App not found")
+        return apps[app_id]
+
     @web_app.get("/")
     async def home(request: Request):
         app_list = list(apps.keys())
@@ -169,22 +204,24 @@ def fastapi_app():
         )
 
     @web_app.post("/api/create")
-    async def create_app():
+    async def create_app(request: Request):
+        data = await request.json()
         time = datetime.now().strftime("%Y%m%d%H%M%S")
         app_id = str(uuid.uuid4()) + f"_{time}"
         apps[app_id] = App(app_id)
+        await apps[app_id].edit(data["prompt"], is_init=True)
         return JSONResponse({"app_id": app_id})
 
     @web_app.get("/app/{app_id}")
     async def app_page(request: Request, app_id: str):
-        app = apps[app_id]
+        app = _get_app_or_raise(app_id)
         return templates.TemplateResponse(
             name="pages/app.html",
             context={
                 "request": request,
                 "app_id": app_id,
                 "relay_url": app.sandbox_tunnel_url,
-                "message_history": apps[app_id].message_history
+                "message_history": app.message_history
             }
         )
 
@@ -192,32 +229,17 @@ def fastapi_app():
     async def write_app(app_id: str, request: Request):
         data = await request.json()
         is_init = data.get("is_init", False)
-        app = apps[app_id]
-        edit_url = f"{app.sandbox_tunnel_url}/edit"
+        app = _get_app_or_raise(app_id)
         try:
-            data = await request.json()
-            app = apps[app_id]
-            async with httpx.AsyncClient() as client:
-                edit = await app.generate_edit(data["text"], is_init=is_init)
-                # TODO: explain at the same time of generation
-                response = await client.post(
-                    edit_url,
-                    json={
-                        "html": str(edit),
-                    },
-                    timeout=60.0
-                )
-                print(f"Write response status: {response.status_code}")
-                if not is_init:
-                    app.explain_edit(data["text"], app.current_html, str(edit))
-                return JSONResponse(response.json(), status_code=response.status_code)
+            response = await app.edit(data["text"], is_init=is_init)
+            return JSONResponse(response.json(), status_code=response.status_code)
         except Exception as e:
             print(f"Error writing to relay with data: {data}: {str(e)}")
             return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
     @web_app.get("/api/app/{app_id}/ping")
     async def ping_app(app_id: str):
-        app = apps[app_id]
+        app = _get_app_or_raise(app_id)
         try:
             await app.wait_for_ready()
         except TimeoutError as e:
@@ -239,7 +261,7 @@ def fastapi_app():
 
     @web_app.get("/api/app/{app_id}/display")
     async def display_app(app_id: str):
-        app = apps[app_id]
+        app = _get_app_or_raise(app_id)
         
         try:
             await app.wait_for_ready()

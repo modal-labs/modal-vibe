@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="flex flex-col lg:flex-row gap-4 sm:gap-6 p-4 sm:p-6 min-h-[calc(100vh-100px)]">
+<div class="flex flex-col lg:flex-row gap-4 sm:gap-6 py-4 sm:p-6 min-h-[calc(100vh-100px)]">
 
   <!-- Left side: Message History -->
   <div class="w-full lg:w-96 lg:flex-shrink-0">
@@ -22,13 +22,17 @@
         {% if message_history %}
           <div class="space-y-3">
             {% for message in message_history %}
-              {% if message.type == "user" %}
-                <div class="flex bg-green-900/10 rounded-lg p-4 border border-white/10">
-                  <p class="text-sm text-gray-200 leading-relaxed">{{ message }}</p>
+              {% if message.type.value == "user" %}
+                <div class="flex justify-end">
+                  <div class="bg-green-700 rounded-lg p-4 border border-white/10">
+                    <p class="text-sm text-white leading-relaxed">{{ message.content }}</p>
+                  </div>
                 </div>
               {% else %}
-                <div class="flex bg-white/10 rounded-lg p-4 border border-white/10 justify-end">
-                  <p class="text-sm text-green-200">{{ message }}</p>
+                <div class="flex">
+                  <div class="bg-white/10 rounded-lg p-4 border border-white/10 justify-end">
+                  <p class="text-sm text-white">{{ message.content }}</p>
+                  </div>
                 </div>
               {% endif %}
             {% endfor %}
@@ -77,11 +81,11 @@
 
   </div>
 
-  <!-- Right side: preview iframe -->
   <div class="flex-1 h-[400px] sm:h-[600px] lg:h-auto">
     <div class="bg-white/10 shadow-2xl rounded-xl overflow-hidden h-full border border-white/10">
-      <div class="px-4 sm:px-6 py-4 border-b border-white/10">
+      <div class="flex justify-between px-4 sm:px-6 py-4 border-b border-white/10">
         <h2 class="text-xl sm:text-2xl font-semibold text-white">Live Preview</h2>
+        <p id="statusDisplay" class="text-sm text-gray-400"></p>
       </div>
       <iframe
         id="previewFrame"
@@ -99,6 +103,7 @@
 {% block scripts %}
 <script>
 const APP_ID = '{{ app_id }}';
+const PROMPT = '{{ prompt }}';
 
 function setLoading(isLoading) {
     const button = document.getElementById('applyButton');
@@ -140,14 +145,38 @@ document.getElementById('editForm').addEventListener('submit', async e => {
 // Remove the debounce listener since we only want updates on button click
 document.getElementById('textInput').removeEventListener('input', () => {});
 
-async function checkHealth() {
+async function checkHealth(updateUI = false) {
+  const statusDisplay = document.getElementById('statusDisplay');
   try {
     const res = await fetch(`/api/app/${APP_ID}/ping`);
-    if (res.ok) console.log('API healthy');
-  } catch {}
+    const isOnline = res.ok;
+    if (updateUI && statusDisplay) {
+      updateStatusDisplay(isOnline);
+    }
+    if (isOnline) console.log('API healthy');
+  } catch {
+    if (updateUI && statusDisplay) {
+      updateStatusDisplay(false);
+    }
+  }
 }
-setInterval(checkHealth, 30000);
-checkHealth();
+
+function updateStatusDisplay(isOnline) {
+  const statusDisplay = document.getElementById('statusDisplay');
+  if (!statusDisplay) return;
+  statusDisplay.textContent = isOnline ? 'Sandbox Status: Online \u{1F7E2}' : 'Sandbox Status: Offline \u{1F534}';
+  statusDisplay.classList.remove(isOnline ? 'text-red-400' : 'text-green-400');
+  statusDisplay.classList.add(isOnline ? 'text-green-400' : 'text-red-400');
+}
+
+setInterval(() => checkHealth(true), 30000);
+checkHealth(true);
+
+// Manual status check button
+const statusBtn = document.getElementById('statusButton');
+if (statusBtn) {
+  statusBtn.addEventListener('click', () => checkHealth(true));
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   const iframe = document.getElementById('previewFrame');
@@ -164,5 +193,12 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch {}
   };
 });
+
+setInterval(() => {
+  const iframe = document.getElementById('previewFrame');
+  if (iframe) {
+    iframe.src = `/api/app/${APP_ID}/display?ts=${Date.now()}`;
+  }
+}, 5000);
 </script>
 {% endblock %}
