@@ -23,7 +23,7 @@
                         type="text" 
                         id="appPrompt"
                         placeholder="What's the vibe today?" 
-                        class="w-full px-4 py-3 border border-[rgba(255,255,255,0.1)] rounded-lg bg-[rgba(255,255,255,0.02)] text-gray-300 placeholder-gray-500 tracking-tight focus:outline-none"
+                        class="w-full px-4 py-3 border border-[rgba(255,255,255,0.1)] rounded-lg bg-white/5 text-gray-300 placeholder-gray-500 tracking-tight focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#000000]"
                     >
                     <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
                         <svg class="w-5 h-5 text-[#8491a5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -32,9 +32,11 @@
                     </div>
                 </div>
                 
-                <button id="createAppBtn" onclick="createApp()" class="btn-modal w-full py-3 px-8 rounded-lg text-lg transition duration-200 font-medium tracking-tight">
-                    Create App
-                </button>
+                <div id="buttonContainer" class="w-full">
+                    <button id="createAppBtn" onclick="createApp()" class="btn-modal w-full py-3 px-8 rounded-lg text-lg transition duration-200 font-medium tracking-tight">
+                        Create App
+                    </button>
+                </div>
                 
                 <div id="spinner" class="hidden">
                     <div class="flex items-center justify-center space-x-3 mt-4">
@@ -143,12 +145,12 @@
 async function createApp() {
     const button = document.getElementById('createAppBtn');
     const spinner = document.getElementById('spinner');
-    const createAppDiv = document.getElementById('createAppDiv');
+    const buttonContainer = document.getElementById('buttonContainer');
     const promptInput = document.getElementById('appPrompt');
     const prompt = promptInput.value.trim() || "A simple hello world landing page";
     
-    // Add shimmer effect to the entire div
-    createAppDiv.classList.add('shimmer');
+    buttonContainer.classList.add('shimmer');
+    promptInput.disabled = true;
     button.style.display = 'none';
     spinner.classList.remove('hidden');
     
@@ -166,8 +168,7 @@ async function createApp() {
         }
     } catch (error) {
         console.error('Error creating app:', error);
-        // Remove shimmer effect and restore button on error
-        createAppDiv.classList.remove('shimmer');
+        buttonContainer.classList.remove('shimmer');
         button.style.display = 'inline-block';
         spinner.classList.add('hidden');
     }
