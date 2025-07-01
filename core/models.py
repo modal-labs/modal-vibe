@@ -32,7 +32,7 @@ class SandboxApp:
         self.current_html = ""
         self._ready = False
         from sandbox.start_sandbox import run_sandbox_server_with_tunnel
-        self.sandbox_tunnel_url = run_sandbox_server_with_tunnel(app=app, image=image)
+        self.sandbox_tunnel_url = run_sandbox_server_with_tunnel(app=app)
         self.client = client
         asyncio.create_task(self._wait_for_sandbox_alive())
 
