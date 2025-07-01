@@ -1,4 +1,1 @@
-fastapi[standard]
-jinja2
-python-multipart 
-pydantic
+modal
