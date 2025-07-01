@@ -90,8 +90,8 @@
       <iframe
         id="previewFrame"
         src="/api/app/{{ app_id }}/display"
-        class="w-full h-full border-t border-white/10 bg-white"
-        style="background-color: white !important;"
+        class="w-full h-full border-t border-white/10 bg-transparent transition-opacity duration-300 opacity-100"
+        style="background-color: transparent !important;"
         title="App Preview"
       ></iframe>
     </div>
@@ -197,8 +197,19 @@ document.addEventListener('DOMContentLoaded', () => {
 setInterval(() => {
   const iframe = document.getElementById('previewFrame');
   if (iframe) {
-    iframe.src = `/api/app/${APP_ID}/display?ts=${Date.now()}`;
+    iframe.style.opacity = '0'; // Start fade out
+    setTimeout(() => {
+      iframe.src = `/api/app/${APP_ID}/display?ts=${Date.now()}`;
+    }, 150); // Wait for fade out before reload
   }
 }, 5000);
+
+// Fade in when iframe loads
+const previewFrame = document.getElementById('previewFrame');
+if (previewFrame) {
+  previewFrame.addEventListener('load', () => {
+    previewFrame.style.opacity = '1';
+  });
+}
 </script>
 {% endblock %}

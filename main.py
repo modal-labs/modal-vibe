@@ -134,8 +134,8 @@ class App:
         - "I colored the background red and added a new button. Let me know if you want anything else!"
         - "I updated the font to a more modern one and added a new section. Cheers!!"
 
-
-        """, model="claude-3-5-haiku-20241022", max_tokens=512)   
+        Be as concise as possible, but always be friendly!
+        """, model="claude-3-5-haiku-20241022", max_tokens=256)   
         self.message_history.append(Message(content=explaination, type=MessageType.ASSISTANT))
         return explaination
 
@@ -284,7 +284,7 @@ def fastapi_app():
                         justify-content: center;
                     }}
                     .loading-container {{
-                        background: white;
+                        background: rgba(30, 41, 59, 0.95);
                         padding: 40px;
                         border-radius: 10px;
                         box-shadow: 0 10px 30px rgba(0,0,0,0.2);
