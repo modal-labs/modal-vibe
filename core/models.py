@@ -73,7 +73,8 @@ class SandboxApp:
 
         prompt = f"""
         You are Jeffrey Zeldman's top web designer. You are given the following prompt and your job is to generate a React component that is a good example of the prompt.
-        You should use Tailwind CSS for styling.
+        You should use Tailwind CSS for styling. Please make sure to export the component as default.
+        This is incredibly important for my job, please be careful and don't make any mistakes.
         Prompt: {message}
 
         {html_gen_prompt}

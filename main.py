@@ -10,14 +10,15 @@ import asyncio
 
 load_dotenv()
 llm_client = get_llm_client()
-image = (modal.Image.debian_slim()
+image = (
+    modal.Image.debian_slim()
     .pip_install(
         "fastapi[standard]",
         "jinja2",
         "python-multipart",
         "httpx",
         "python-dotenv",
-        "anthropic"
+        "anthropic",
     )
     .add_local_dir("web", "/root/web")
     .add_local_dir("sandbox", "/root/sandbox")
@@ -35,19 +36,19 @@ def fastapi_app():
     from fastapi.staticfiles import StaticFiles
     from fastapi.templating import Jinja2Templates
     import httpx
-    
+
     apps = {}
 
     web_app = FastAPI()
     web_app.mount("/static", StaticFiles(directory="/root/web/static"), name="static")
-    
+
     templates = Jinja2Templates(directory="/root/web/templates")
 
     def _get_app_or_raise(app_id: str) -> SandboxApp:
         if app_id not in apps:
             raise HTTPException(status_code=404, detail="App not found")
         return apps[app_id]
-    
+
     async def _cleanup_dead_sandboxes():
         """Check all sandboxes and remove dead ones from the apps dictionary"""
         dead_apps = []
@@ -59,11 +60,11 @@ def fastapi_app():
             except Exception as e:
                 print(f"Error checking sandbox {app_id}: {str(e)}")
                 dead_apps.append(app_id)
-        
+
         for app_id in dead_apps:
             del apps[app_id]
             print(f"✅ Removed dead sandbox: {app_id}")
-    
+
     async def background_cleanup_task(interval: float = 60.0):
         while True:
             try:
@@ -79,25 +80,20 @@ def fastapi_app():
     @web_app.exception_handler(404)
     async def not_found_handler(request: Request, exc):
         return templates.TemplateResponse(
-            name="pages/404.html",
-            context={"request": request},
-            status_code=404
+            name="pages/404.html", context={"request": request}, status_code=404
         )
-    
+
     @web_app.exception_handler(503)
     async def service_unavailable_handler(request: Request, exc):
         return templates.TemplateResponse(
-            name="pages/503.html",
-            context={"request": request},
-            status_code=503
+            name="pages/503.html", context={"request": request}, status_code=503
         )
 
     @web_app.get("/")
     async def home(request: Request):
         app_list = list(apps.keys())
         return templates.TemplateResponse(
-            name="pages/home.html",
-            context={"request": request, "apps": app_list}
+            name="pages/home.html", context={"request": request, "apps": app_list}
         )
 
     @web_app.get("/app/{app_id}")
@@ -109,8 +105,8 @@ def fastapi_app():
                 "request": request,
                 "app_id": app_id,
                 "relay_url": app.sandbox_tunnel_url,
-                "message_history": app.message_history
-            }
+                "message_history": app.message_history,
+            },
         )
 
     @web_app.post("/api/create")
@@ -141,47 +137,83 @@ def fastapi_app():
             await app.wait_for_ready()
         except TimeoutError as e:
             return JSONResponse({"status": "error", "message": str(e)}, status_code=503)
-        
+
         heartbeat_url = f"{app.sandbox_tunnel_url}/heartbeat"
         try:
             print(f"Pinging relay at: {heartbeat_url}")
             async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    heartbeat_url,
-                    timeout=10.0
-                )
+                response = await client.get(heartbeat_url, timeout=10.0)
                 print(f"Ping response status: {response.status_code}")
                 return JSONResponse(response.json(), status_code=response.status_code)
         except Exception as e:
             print(f"Error pinging relay: {str(e)}")
             return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
-    @web_app.get("/api/app/{app_id}/display")
+    # @web_app.get("/api/app/{app_id}/display")
+    # async def display_app(app_id: str):
+    #     app = _get_app_or_raise(app_id)
+
+    #     try:
+    #         await app.wait_for_ready()
+    #     except TimeoutError as e:
+    #         raise HTTPException(status_code=503, detail="Service Unavailable")
+
+    #     display_url = f"{app.sandbox_user_tunnel_url}"
+    #     print(f"Attempting to fetch display from: {display_url}")
+
+    #     try:
+    #         async with httpx.AsyncClient() as client:
+    #             response = await client.get(display_url, timeout=120.0)
+    #             print(f"Relay response status: {response.status_code}")
+    #             if response.status_code == 200:
+    #                 return HTMLResponse(
+    #                     content=response.text, status_code=response.status_code
+    #                 )
+    #             else:
+    #                 print(
+    #                     f"Relay returned non-200 status: {response.status_code}, text: {response.text}"
+    #                 )
+    #                 raise Exception(f"Relay server returned {response.status_code}")
+    #     except Exception as e:
+    #         print(f"Error connecting to relay: {str(e)}")
+    #         raise HTTPException(status_code=503, detail="Service Unavailable")
+
+    @web_app.get("/api/app/{app_id}/display", response_class=HTMLResponse)
     async def display_app(app_id: str):
         app = _get_app_or_raise(app_id)
-        
+
         try:
             await app.wait_for_ready()
-        except TimeoutError as e:
+        except TimeoutError:
             raise HTTPException(status_code=503, detail="Service Unavailable")
-        
-        display_url = f"{app.sandbox_tunnel_url}/display"
-        print(f"Attempting to fetch display from: {display_url}")
-        
-        try:
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    display_url,
-                    timeout=120.0
-                )
-                print(f"Relay response status: {response.status_code}")
-                if response.status_code == 200:
-                    return HTMLResponse(content=response.text, status_code=response.status_code)
-                else:
-                    print(f"Relay returned non-200 status: {response.status_code}, text: {response.text}")
-                    raise Exception(f"Relay server returned {response.status_code}")
-        except Exception as e:
-            print(f"Error connecting to relay: {str(e)}")
-            raise HTTPException(status_code=503, detail="Service Unavailable")
+
+        display_url = app.sandbox_user_tunnel_url
+        print(f"Embedding iframe from: {display_url}")
+
+        # Render an iframe instead of fetching the raw HTML
+        iframe_html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>App Preview</title>
+            <style>
+                body, html {{
+                    margin: 0;
+                    padding: 0;
+                    height: 100%;
+                }}
+                iframe {{
+                    width: 100%;
+                    height: 100%;
+                    border: none;
+                }}
+            </style>
+        </head>
+        <body>
+            <iframe src="{display_url}" allow="clipboard-write"></iframe>
+        </body>
+        </html>
+        """
+        return HTMLResponse(content=iframe_html)
 
     return web_app
