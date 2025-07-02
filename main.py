@@ -149,35 +149,6 @@ def fastapi_app():
             print(f"Error pinging relay: {str(e)}")
             return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
-    # @web_app.get("/api/app/{app_id}/display")
-    # async def display_app(app_id: str):
-    #     app = _get_app_or_raise(app_id)
-
-    #     try:
-    #         await app.wait_for_ready()
-    #     except TimeoutError as e:
-    #         raise HTTPException(status_code=503, detail="Service Unavailable")
-
-    #     display_url = f"{app.sandbox_user_tunnel_url}"
-    #     print(f"Attempting to fetch display from: {display_url}")
-
-    #     try:
-    #         async with httpx.AsyncClient() as client:
-    #             response = await client.get(display_url, timeout=120.0)
-    #             print(f"Relay response status: {response.status_code}")
-    #             if response.status_code == 200:
-    #                 return HTMLResponse(
-    #                     content=response.text, status_code=response.status_code
-    #                 )
-    #             else:
-    #                 print(
-    #                     f"Relay returned non-200 status: {response.status_code}, text: {response.text}"
-    #                 )
-    #                 raise Exception(f"Relay server returned {response.status_code}")
-    #     except Exception as e:
-    #         print(f"Error connecting to relay: {str(e)}")
-    #         raise HTTPException(status_code=503, detail="Service Unavailable")
-
     @web_app.get("/api/app/{app_id}/display", response_class=HTMLResponse)
     async def display_app(app_id: str):
         app = _get_app_or_raise(app_id)
@@ -190,7 +161,6 @@ def fastapi_app():
         display_url = app.sandbox_user_tunnel_url
         print(f"Embedding iframe from: {display_url}")
 
-        # Render an iframe instead of fetching the raw HTML
         iframe_html = f"""
         <!DOCTYPE html>
         <html>

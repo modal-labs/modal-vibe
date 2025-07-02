@@ -25,7 +25,7 @@ class Message(BaseModel):
 class SandboxApp:
     id: str
     message_history: list[Message]
-    current_html: str
+    current_component: str
     sandbox_tunnel_url: str
     _ready: bool
 
@@ -34,7 +34,7 @@ class SandboxApp:
     ):
         self.id = id
         self.message_history = []
-        self.current_html = ""
+        self.current_component = ""
         self._ready = False
         from sandbox.start_sandbox import run_sandbox_server_with_tunnel
 
@@ -59,7 +59,7 @@ class SandboxApp:
         html_gen_prompt = (
             f"""
         The existing React component you are working with is this.
-        {self.current_html}
+        {self.current_component}
 
         You are asked to make the following changes to the React component:
         {message}
@@ -80,7 +80,7 @@ class SandboxApp:
         {html_gen_prompt}
 
         RESPONSE FORMAT:
-        function LLMComponent() {{
+        export default function LLMComponent() {{
             return (
                 <div className="bg-red-500">
                     <h1>LLM Component</h1>
@@ -92,7 +92,7 @@ class SandboxApp:
         """
         response = generate_response(self.client, prompt)
         self.message_history.append(Message(content=message, type=MessageType.USER))
-        self.current_html = response
+        self.current_component = response
         print(f"Generated edit: {response}")
         return response
 
@@ -101,11 +101,11 @@ class SandboxApp:
         message: str,
         is_init: bool = False,
     ) -> httpx.Response:
-        original_html = self.current_html
+        original_html = self.current_component
         edit_url = f"{self.sandbox_tunnel_url}/edit"
         async with httpx.AsyncClient() as client:
             edit = await self._generate_edit(message, is_init=is_init)
-            self.explain_edit(message, original_html, self.current_html, is_init)
+            self.explain_edit(message, original_html, self.current_component, is_init)
             response = await client.post(
                 edit_url,
                 json={
