@@ -1,11 +1,10 @@
-import './App.css'
 import LLMComponent from './LLMComponent'
-function App() {
 
+const App = () => {
   return (
-    <>
+    <div className="bg-white h-screen w-screen" >
       <LLMComponent />
-    </>
+    </div>
   )
 }
 

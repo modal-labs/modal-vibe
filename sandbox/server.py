@@ -25,13 +25,13 @@ def is_component_valid(component: str) -> bool:
 
 
 class EditRequest(BaseModel):
-    html: str
+    component: str
 
 
 @fastapi_app.post("/edit")
 async def edit_text(request: EditRequest):
     global display_html
-    llm_react_app = request.html
+    llm_react_app = request.component
     if not is_component_valid(llm_react_app):
         print(f"Invalid component: {llm_react_app}")
         return {"status": "error", "message": "Invalid component"}

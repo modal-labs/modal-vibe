@@ -127,10 +127,11 @@ async function updateContent(text) {
         if (res.ok) {
             window.location.reload();
         } else {
-            console.error('Update failed:', res.statusText);
+            const data = await res.json().catch(() => ({ error: 'Failed to update content' }));
+            window.toast.show(data.error || 'Failed to update content');
         }
     } catch (err) {
-        console.error('Error:', err);
+        window.toast.show('Error: Could not connect to the server');
     } finally {
         setLoading(false);
     }
@@ -156,11 +157,14 @@ async function checkHealth(updateUI = false) {
     if (updateUI && statusDisplay) {
       updateStatusDisplay(isOnline);
     }
-    if (isOnline) console.log('API healthy');
+    if (!isOnline) {
+      window.toast.show('Sandbox is offline');
+    }
   } catch {
     if (updateUI && statusDisplay) {
       updateStatusDisplay(false);
     }
+    window.toast.show('Could not connect to sandbox');
   }
 }
 

@@ -6,7 +6,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import uuid
 import os
-from pathlib import Path
 from dotenv import load_dotenv
 import anthropic
 
@@ -34,6 +33,8 @@ def generate_edit(prompt: str):
     You are Jeffrey Zeldman's top web designer. You are given the following prompt and your job is to generate a React component that is a good example of the prompt.
     You should use Tailwind CSS for styling. Please make sure to export the component as default.
     This is incredibly important for my job, please be careful and don't make any mistakes.
+    Make sure you import all necessary dependencies.
+
     Prompt: {prompt}
 
     RESPONSE FORMAT:
@@ -83,7 +84,7 @@ async def write_app(app_id: str, request: Request):
     try:
         data = await request.json()
         edit = generate_edit(data["text"])
-        return JSONResponse({"html": str(edit)})
+        return JSONResponse({"component": str(edit)})
     except Exception as e:
         return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
