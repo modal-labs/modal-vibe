@@ -15,27 +15,27 @@ Each application lives on a Modal Sandbox and contains a webserver accessible th
 Set-up the local environment.
 
 ```bash
-python3 -m venv venv && source venv/bin/activate && pip install -r requirements.txt
+python3 -m venv venv && source venv/bin/activate && pip install -r requirements.dev.txt
 ```
 
 ### Deploy
-To deploy to Modal, copy the `.env.example` and add your `ANTHROPIC_API_KEY`. Also, add the `ANTHROPIC_API_KEY` to `Secret` under the name `anthropic-secret` so our applications can access it.
+To deploy to Modal, copy the `.env.example` and add your `ANTHROPIC_API_KEY`. Also, create a Modal Secret called `anthropic-secret` so our applications can access it.
 
 Then, run the following code block:
 
 ```bash
-MODAL_PROFILE=modal-labs modal deploy --env=joy-dev app/main.py
+modal deploy -m main
 ```
 
 ### Local Development
 
 Run an example sandbox HTTP server:
 ```bash
-MODAL_PROFILE=modal-labs python app/sandbox/server.py --env=joy-dev
+python -m sandbox.server
 ```
 
 Run the webserver locally for fast development:
 ```bash
-python local.py
+python -m local
 ```
 

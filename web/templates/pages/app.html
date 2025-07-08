@@ -140,7 +140,12 @@ document.getElementById('editForm').addEventListener('submit', async e => {
     e.preventDefault();
     await updateContent(document.getElementById('textInput').value);
 });
-
+document.getElementById('textInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault(); // Prevent newline
+    document.getElementById('editForm').dispatchEvent(new Event('submit', { cancelable: true }));
+  }
+});
 document.getElementById('textInput').removeEventListener('input', () => {});
 
 async function checkHealth(updateUI = false) {

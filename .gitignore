@@ -7,3 +7,4 @@
 **/.mypy_cache/
 **/.ruff_cache/
 **/.env
+**/node_modules
