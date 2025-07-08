@@ -5,7 +5,7 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   server: {
-    allowedHosts: true
+    allowedHosts: ['.modal.host'],
   },
   plugins: [react(), tailwindcss()],
 })

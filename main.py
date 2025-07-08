@@ -1,6 +1,7 @@
 """Main entrypoint that runs the FastAPI controller that serves the web app and manages the sandbox apps."""
 
 from datetime import datetime
+from http.client import HTTPException
 from core.llm import get_llm_client
 from core.models import SandboxApp
 import modal

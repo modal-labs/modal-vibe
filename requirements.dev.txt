@@ -1,4 +1,4 @@
--r requirements.txt
+modal
 fastapi[standard]
 jinja2
 python-multipart 

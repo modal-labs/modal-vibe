@@ -56,6 +56,7 @@ class SandboxApp:
 
     async def _generate_edit(self, message: str, is_init: bool = False):
         await self.wait_for_ready()
+
         html_gen_prompt = (
             f"""
         The existing React component you are working with is this.
@@ -75,11 +76,14 @@ class SandboxApp:
         You are Jeffrey Zeldman's top web designer. You are given the following prompt and your job is to generate a React component that is a good example of the prompt.
         You should use Tailwind CSS for styling. Please make sure to export the component as default.
         This is incredibly important for my job, please be careful and don't make any mistakes.
+        Make sure you import all necessary dependencies.
+
         Prompt: {message}
 
         {html_gen_prompt}
 
         RESPONSE FORMAT:
+        import React from 'react';
         export default function LLMComponent() {{
             return (
                 <div className="bg-red-500">
@@ -109,7 +113,7 @@ class SandboxApp:
             response = await client.post(
                 edit_url,
                 json={
-                    "html": str(edit),
+                    "component": str(edit),
                 },
                 timeout=60.0,
             )
@@ -119,9 +123,21 @@ class SandboxApp:
     def explain_edit(
         self, message: str, original_html: str, new_html: str, is_init: bool = False
     ):
-        explaination = generate_response(
-            self.client,
-            f"""
+        if is_init:
+            prompt = f"""
+            You are Jeffrey Zeldman's top web designer. You were given the following prompt and you generated the following React component:
+
+            Prompt: {message}
+
+            You generated the following React component: {new_html}
+
+            Give a response that summarizes the changes you made. An example of a good response is:
+            - "That sounds great! I made a donut chart for you. Let me know if you want anything else!"
+
+            Be as concise as possible, but always be friendly!
+            """
+        else: 
+            prompt = f"""
         You generated the following React component edit to the prompt:
 
         Prompt: {message}
@@ -137,7 +153,11 @@ class SandboxApp:
         - "I updated the font to a more modern one and added a new section. Cheers!!"
 
         Be as concise as possible, but always be friendly!
-        """,
+        """
+        
+        explaination = generate_response(
+            self.client,
+            prompt,
             model="claude-3-5-haiku-20241022",
             max_tokens=128,
         )

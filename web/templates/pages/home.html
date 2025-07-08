@@ -160,15 +160,24 @@ async function createApp() {
             },
             body: JSON.stringify({ prompt })
         });
+        
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({ error: 'Failed to create app' }));
+            throw new Error(data.error || 'Failed to create app');
+        }
+        
         const data = await response.json();
         if (data.app_id) {
             window.location.href = `/app/${data.app_id}`;
+        } else {
+            throw new Error('Invalid response from server');
         }
     } catch (error) {
-        console.error('Error creating app:', error);
+        window.toast.show(error.message || 'Error creating app');
         createAppDiv.classList.remove('shimmer');
         button.style.display = 'inline-block';
         spinner.classList.add('hidden');
+        promptInput.disabled = false;
     }
 }
 </script>

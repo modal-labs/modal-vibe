@@ -1,10 +1,12 @@
 # Modal Vibe
-Example application that lets users programmatically create Sandboxed applications that service HTML through a UI.
+Example application that lets users programmatically create Sandboxed applications that service React through a UI.
 
 Each application lives on a Modal Sandbox and contains a webserver accessible through Modal Tunnels.
 
 
 ## Structure
+![Architecture Diagram](./public/architecture.png)
+
 - `main.py` is the entrypoint that runs the FastAPI controller that serves the web app and manages the sandbox apps.
 - `core` contains the logic for `SandboxApp` model and LLM logic.
 - `sandbox` contains a small HTTP server that gets put inside every Sandbox that's created, as well as some sandbox lifecycle management code.

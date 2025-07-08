@@ -20,19 +20,7 @@ sandbox_image = (
     )
     .add_local_dir("sandbox", "/root/sandbox")
     .add_local_file("sandbox/server.py", "/root/server.py")
-    .add_local_dir("web/vite-app/public", "/root/vite-app/public")
-    .add_local_dir("web/vite-app/src", "/root/vite-app/src")
-    .add_local_file("web/vite-app/eslint.config.js", "/root/vite-app/eslint.config.js")
-    .add_local_file("web/vite-app/index.html", "/root/vite-app/index.html")
-    .add_local_file("web/vite-app/package.json", "/root/vite-app/package.json")
-    .add_local_file("web/vite-app/tsconfig.json", "/root/vite-app/tsconfig.json")
-    .add_local_file(
-        "web/vite-app/tsconfig.node.json", "/root/vite-app/tsconfig.node.json"
-    )
-    .add_local_file(
-        "web/vite-app/tsconfig.app.json", "/root/vite-app/tsconfig.app.json"
-    )
-    .add_local_file("web/vite-app/vite.config.ts", "/root/vite-app/vite.config.ts")
+    .add_local_dir("web/vite-app", "/root/vite-app")
 )
 
 
