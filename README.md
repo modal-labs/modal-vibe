@@ -1,4 +1,6 @@
 # Modal Vibe
+![Home Page](./public/homepage.png)
+
 Example application that lets users programmatically create Sandboxed applications that service React through a UI.
 
 Each application lives on a Modal Sandbox and contains a webserver accessible through Modal Tunnels.
@@ -36,8 +38,4 @@ Run an example sandbox HTTP server:
 python -m sandbox.server
 ```
 
-Run the webserver locally for fast development:
-```bash
-python -m local
-```
 
