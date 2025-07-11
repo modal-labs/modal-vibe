@@ -1,7 +1,7 @@
 import modal
 
 SANDBOX_TIMEOUT = 86400  # 24 hours
-
+APP_BACKEND_PORT = 8001
 
 sandbox_image = (
     modal.Image.from_registry("node:22-slim", add_python="3.12")
@@ -20,6 +20,7 @@ sandbox_image = (
     )
     .add_local_dir("sandbox", "/root/sandbox")
     .add_local_file("sandbox/server.py", "/root/server.py")
+    .add_local_file("web/app_backend.py", "/root/app_backend.py")
     .add_local_dir("web/vite-app", "/root/vite-app")
 )
 
@@ -29,16 +30,17 @@ def run_sandbox_server_with_tunnel(app: modal.App):
     sb = modal.Sandbox.create(
         "sh",
         "-c",
-        "pnpm install --dir /root/vite-app && pnpm --prefix /root/vite-app dev --host & python /root/server.py",
+        "pnpm install --dir /root/vite-app && pnpm --prefix /root/vite-app dev --host & python -m uvicorn app_backend:app --host 0.0.0.0 --port 8001 & python /root/server.py",
         image=sandbox_image,
         app=app,
         timeout=SANDBOX_TIMEOUT,
-        encrypted_ports=[8000, 5173],
+        encrypted_ports=[8000, 5173, 8001],
     )
     print(f"📋 Created sandbox with ID: {sb.object_id}")
 
     main_tunnel = sb.tunnels()[8000]
     user_tunnel = sb.tunnels()[5173]
+    backend_tunnel = sb.tunnels()[8001]
     print(f"\n🚀 Creating HTTP Server with tunnel!")
     print(f"🌐 Public URL: {main_tunnel.url}")
     print(f"🔒 TLS Socket: {main_tunnel.tls_socket}")
@@ -51,8 +53,14 @@ def run_sandbox_server_with_tunnel(app: modal.App):
     print(f"🌐 Frontend URL: {user_tunnel.url} <-- Open this in your browser!")
     print(f"🔒 TLS Socket: {user_tunnel.tls_socket}")
 
+    print()
+    print(f"🚀 FastAPI Backend URL: {backend_tunnel.url}")
+    print(f"🔒 TLS Socket: {backend_tunnel.tls_socket}")
+    print("📡 Available backend endpoints:")
+    print(f"  GET  {backend_tunnel.url}/ - Hello World endpoint")
+
     print("Sandbox server with tunnel running")
-    return main_tunnel.url, user_tunnel.url
+    return main_tunnel.url, user_tunnel.url, backend_tunnel.url
 
 
 if __name__ == "__main__":

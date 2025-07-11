@@ -26,12 +26,14 @@ def is_component_valid(component: str) -> bool:
 
 class EditRequest(BaseModel):
     component: str
+    backend_code: str
 
 
 @fastapi_app.post("/edit")
 async def edit_text(request: EditRequest):
     global display_html
     llm_react_app = request.component
+    backend_code = request.backend_code
     if not is_component_valid(llm_react_app):
         print(f"Invalid component: {llm_react_app}")
         return {"status": "error", "message": "Invalid component"}
@@ -40,6 +42,12 @@ async def edit_text(request: EditRequest):
     with open("/root/vite-app/src/LLMComponent.tsx", "w+") as f:
         f.write(llm_react_app)
     print(f"Component edited to: {llm_react_app}")
+
+    print(f"Backend code: {backend_code}")
+    with open("/root/app_backend.py", "w+") as f:
+        f.write(backend_code)
+    print(f"Backend code written to: {backend_code}")
+
     return {"status": "ok"}
 
 
