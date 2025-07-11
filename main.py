@@ -1,7 +1,6 @@
 """Main entrypoint that runs the FastAPI controller that serves the web app and manages the sandbox apps."""
 
 from datetime import datetime
-from http.client import HTTPException
 from core.llm import get_llm_client
 from core.models import SandboxApp
 import modal
@@ -115,17 +114,20 @@ def fastapi_app():
         data = await request.json()
         time = datetime.now().strftime("%Y%m%d%H%M%S")
         app_id = str(uuid.uuid4()) + f"_{time}"
-        apps[app_id] = SandboxApp(app_id, app, image, llm_client)
-        await apps[app_id].edit(data["prompt"], is_init=True)
+        
+        sandbox_app = SandboxApp(app_id, app, image, llm_client)
+        apps[app_id] = sandbox_app
+        
+        asyncio.create_task(sandbox_app.edit(data["prompt"]))
+        
         return JSONResponse({"app_id": app_id})
 
     @web_app.post("/api/app/{app_id}/write")
     async def write_app(app_id: str, request: Request):
         data = await request.json()
-        is_init = data.get("is_init", False)
         app = _get_app_or_raise(app_id)
         try:
-            response = await app.edit(data["text"], is_init=is_init)
+            response = await app.edit(data["text"])
             return JSONResponse(response.json(), status_code=response.status_code)
         except Exception as e:
             print(f"Error writing to relay with data: {data}: {str(e)}")

@@ -54,23 +54,23 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"> 
             {% for app_id in apps %}
                 <a href="/app/{{ app_id }}" class="transform transition-all duration-200 hover:scale-[1.02]">
-                    <div class="border border-[rgba(255,255,255,0.05)] rounded-xl p-4 bg-[rgba(255,255,255,0.02)] backdrop-blur-md">
+                    <div class="border border-[rgba(255,255,255,0.05)] rounded-xl p-4 bg-[rgba(255,255,255,0.02)] backdrop-blur-md h-64">
                         <iframe
                             id="previewFrame"
                             src="/api/app/{{ app_id }}/display"
-                            class="w-full h-full border-t border-[rgba(255,255,255,0.05)]"
+                            class="w-full h-full border-t border-[rgba(255,255,255,0.05)] rounded-b-lg"
                             title="App Preview"
                         ></iframe>
                     </div>
                 </a>
             {% endfor %}
             {% if apps|length == 0 %}
-                <div class="border border-[rgba(255,255,255,0.05)] rounded-xl p-8 bg-[rgba(255,255,255,0.02)] backdrop-blur-md flex flex-col items-center justify-center">
+                <div class="border border-[rgba(255,255,255,0.05)] rounded-xl p-8 bg-[rgba(255,255,255,0.02)] backdrop-blur-md flex flex-col items-center justify-center h-64">
                     <h3 class="text-xl font-medium tracking-tight mb-2 gradient-text">No apps yet</h3>
                     <p class="text-[#8491a5] tracking-tight">Why don't you vibe one up?</p>
                 </div>
                 {% for i in range(5) %}
-                    <div class="border border-[rgba(255,255,255,0.05)] rounded-xl p-8 bg-[rgba(255,255,255,0.02)] backdrop-blur-md flex flex-col items-center justify-center">
+                    <div class="border border-[rgba(255,255,255,0.05)] rounded-xl p-8 bg-[rgba(255,255,255,0.02)] backdrop-blur-md flex flex-col items-center justify-center h-64">
                         <h3 class="text-xl font-medium tracking-tight mb-2 gradient-text">...</h3>
                         <p class="text-[#8491a5] tracking-tight">..</p>
                     </div>
