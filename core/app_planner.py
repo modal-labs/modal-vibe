@@ -57,34 +57,34 @@ class AppPlanner:
     ):
         if self.is_init:
             prompt = f"""
-            You are Jeffrey Zeldman's top web designer. You were given the following prompt and you generated the following plan:
+You are Jeffrey Zeldman's top web designer. You were given the following prompt and you generated the following plan:
 
-            Prompt: {message}
+Prompt: {message}
 
-            You generated the following change plan: {self.plan}
+You generated the following change plan: {self.plan}
 
-            Give a response that summarizes the changes you made. An example of a good response is:
-            - "That sounds great! I made a donut chart for you. Let me know if you want anything else!"
+Give a response that summarizes the changes you made. An example of a good response is:
+- "That sounds great! I made a donut chart for you. Let me know if you want anything else!"
 
-            Be as concise as possible, but always be friendly!
+Be as concise as possible, but always be friendly!
             """
         else: 
             prompt = f"""
-        You generated the following change plan to the prompt:
+You generated the following change plan to the prompt:
 
-        Prompt: {message}
+Prompt: {message}
 
-        Original change plan: {original_plan}
-    
-        Generated change plan: {new_plan}
-    
+Original change plan: {original_plan}
 
-        Give a response that summarizes the changes you made. An example of a good response is:
-        - "Sounds good! I've made the changes you requested. Yay :D"
-        - "I colored the background red and added a new button. Let me know if you want anything else!"
-        - "I updated the font to a more modern one and added a new section. Cheers!!"
+Generated change plan: {new_plan}
 
-        Be as concise as possible, but always be friendly!
+
+Give a response that summarizes the changes you made. An example of a good response is:
+- "Sounds good! I've made the changes you requested. Yay :D"
+- "I colored the background red and added a new button. Let me know if you want anything else!"
+- "I updated the font to a more modern one and added a new section. Cheers!!"
+
+Be as concise as possible, but always be friendly!
         """
         
         explaination = generate_response(
