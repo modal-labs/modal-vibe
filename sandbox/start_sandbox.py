@@ -39,20 +39,20 @@ def run_sandbox_server_with_tunnel(app: modal.App):
 
     main_tunnel = sb.tunnels()[8000]
     user_tunnel = sb.tunnels()[5173]
-    print(f"\n🚀 Creating HTTP Server with tunnel!")
+    print("\n🚀 Creating HTTP Server with tunnel!")
     print(f"🌐 Public URL: {main_tunnel.url}")
     print(f"🔒 TLS Socket: {main_tunnel.tls_socket}")
     print("\n📡 Available endpoints:")
     print(f"  POST {main_tunnel.url}/edit - Update display text")
     print(f"  GET  {main_tunnel.url}/heartbeat - Health check")
-    print(f"\n💡 You can now access these endpoints from anywhere on the internet!")
+    print("\n💡 You can now access these endpoints from anywhere on the internet!")
 
     print()
     print(f"🌐 Frontend URL: {user_tunnel.url} <-- Open this in your browser!")
     print(f"🔒 TLS Socket: {user_tunnel.tls_socket}")
 
     print("Sandbox server with tunnel running")
-    return main_tunnel.url, user_tunnel.url
+    return main_tunnel.url, user_tunnel.url, sb.object_id
 
 
 if __name__ == "__main__":

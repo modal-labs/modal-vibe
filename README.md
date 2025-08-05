@@ -28,10 +28,21 @@ To deploy to Modal, copy the `.env.example` and add your `ANTHROPIC_API_KEY`. Al
 Then, run the following code block:
 
 ```bash
+modal volume create sandbox-apps-volume
 modal deploy -m main
 ```
 
 ### Local Development
+
+Load test
+```bash
+MODAL_PROFILE=modal-labs modal run main.py::create_app_loadtest_function --num-apps 10
+```
+
+Admin delete sandbox
+```bash
+MODAL_PROFILE=modal-labs modal run main.py::delete_sandbox_admin_function --app-id <APP_ID>
+```
 
 Run an example sandbox HTTP server:
 ```bash
