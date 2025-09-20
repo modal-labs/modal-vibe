@@ -20,8 +20,8 @@
         }
     </script>
     <link href="/static/css/style.css" rel="stylesheet">
-    <link href="/static/css/bouncing-logo.css" rel="stylesheet">
     <link href="/static/css/toast.css" rel="stylesheet">
+    <link href="/static/css/bouncing-logo.css" rel="stylesheet">
     <style>
         :root {
             --modal-bg: #000;
@@ -46,9 +46,6 @@
 
 </head>
 <body class="min-h-screen">
-    <div class="bouncing-logo-container">
-        <img id="bouncing-logo" src="/static/logo.svg" alt="Bouncing Logo" />
-    </div>
     <nav class="border-b border-gray-800/40">
         <div class="container mx-auto px-4 pt-4">
             <div class="flex justify-between items-center py-4 pl-4 bg-white/10 rounded-xl">
@@ -66,12 +63,16 @@
         </div>
     </nav>
 
+    <div class="bouncing-logo-container">
+        <img id="bouncing-logo" src="/static/logo.svg" alt="Bouncing logo" />
+    </div>
+
     <div class="container mx-auto px-4 mt-8">
         {% block content %}{% endblock %}
     </div>
 
     {% block scripts %}{% endblock %}
-    <script src="/static/js/bouncing-logo.js"></script>
     <script src="/static/js/toast.js"></script>
+    <script src="/static/js/bouncing-logo.js"></script>
 </body>
 </html> 

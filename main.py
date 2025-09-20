@@ -1,25 +1,23 @@
 """Main entrypoint that runs the FastAPI controller that serves the web app and manages the sandbox apps."""
 
-from datetime import datetime
-import json
 import os
+
 from core.llm import get_llm_client
-from core.models import SandboxApp
+from core.models import AppDirectory, SandboxApp
 import modal
-import uuid
 from dotenv import load_dotenv
-import asyncio
+from modal import Dict
 
 load_dotenv()
 llm_client = get_llm_client()
 
-# Persist Sandbox application metadata in a Modal Volume so it can be shared across containers and restarts.
-# This will create the volume on first run if it does not already exist.
-apps_volume = modal.Volume.from_name("sandbox-apps-volume", create_if_missing=True)
-DATA_FILE = "/data/apps.json"
+# Persist Sandbox application metadata in a Modal Dict so it can be shared across containers and restarts.
+# This will create the dict on first run if it does not already exist.
+apps_dict = Dict.from_name("sandbox-apps", create_if_missing=True)
 
-image = (
+core_image = (
     modal.Image.debian_slim()
+    .env({"PYTHONDONTWRITEBYTECODE": "1"})  # Prevent Python from creating .pyc files
     .pip_install(
         "fastapi[standard]",
         "jinja2",
@@ -27,184 +25,115 @@ image = (
         "httpx",
         "python-dotenv",
         "anthropic",
+        "tqdm",
     )
+    .add_local_dir("core", "/root/core")
+)
+image = (
+    core_image
     .add_local_dir("web", "/root/web")
     .add_local_dir("sandbox", "/root/sandbox")
     .add_local_dir("core", "/root/core")
 )
-app = modal.App(name="modal-vibe", image=image,)
 
 
-def load_apps_from_volume() -> dict[str, SandboxApp]:
-    """Load apps from volume and return them as a dict"""
-    try:
-        apps_volume.reload()
-        if os.path.exists(DATA_FILE):
-            with open(DATA_FILE, "r") as f:
-                content = f.read()
-                print(f"Raw JSON content length: {len(content)}")
-                if not content.strip():
-                    print("JSON file is empty, returning empty dict")
-                    return {}
-                app_datas = json.loads(content)
-            return {app_id: SandboxApp.from_dict(app_data, app, image, llm_client) for app_id, app_data in app_datas.items()}
-        else:
-            print(f"Data file {DATA_FILE} does not exist, creating it")
-            with open(DATA_FILE, "w") as f:
-                json.dump({}, f, indent=2)
-        return {}
-    except json.JSONDecodeError as e:
-        print(f"JSON decode error loading apps from volume: {e}")
-        print(f"Error at line {e.lineno}, column {e.colno}: {e.msg}")
-        return {}
-    except Exception as e:
-        print(f"Error loading apps from volume: {e}")
-        return {}
+app = modal.App(name="modal-vibe", image=image)
 
-def save_app_to_volume(app_id: str, app_data: dict) -> None:
-    """Save apps back to volume"""
-    apps_volume.reload()
-    try:
-        existing_data = {}
-        if os.path.exists(DATA_FILE):
-            with open(DATA_FILE, "r") as f:
-                content = f.read()
-                if content.strip():
-                    existing_data = json.loads(content)
-        
-        existing_data[app_id] = app_data
-        with open(DATA_FILE, "w") as f:
-            json.dump(existing_data, f, indent=2)  # Add indentation for readability
-        apps_volume.commit()
-        print(f"Saved app {app_id} to volume")
-    except json.JSONDecodeError as e:
-        print(f"JSON decode error when saving apps to volume: {e}")
-        print(f"Error at line {e.lineno}, column {e.colno}: {e.msg}")
-    except Exception as e:
-        print(f"Error saving apps to volume: {e}")
-
-
-# @app.function(
-#     image=image,
-#     secrets=[modal.Secret.from_name("anthropic-secret")],
-#     volumes={"/data": apps_volume},
-# )
-# @modal.concurrent(max_inputs=50)
-# async def create_app_loadtest_function(num_apps: int = 10):
-#     """Standalone Modal function to create multiple test apps and persist them to volume."""
-#     from core.models import SandboxApp
-#     from core.llm import get_llm_client, generate_response
-    
-#     llm_client = get_llm_client()
-    
-#     def _generate_fake_prompt():
-#         """Use LLM to generate a fake prompt for the app"""
-#         response = generate_response(
-#             llm_client,
-#             "Generate a prompt for an idea on an app to build. The prompt should be a single sentence that describes the app. The prompt should be in the format of 'Create a {app_type} app that {app_description}.'",
-#         )
-#         return response
-
-#     async def create_single_app(i: int) -> SandboxApp:
-#         app_id = str(uuid.uuid4())
-#         prompt = _generate_fake_prompt()
-#         print(f"Creating app {i+1}/{num_apps}: {app_id} with prompt: {prompt}")
-        
-#         sandbox_app = SandboxApp(app_id, app, image, llm_client)
-#         await sandbox_app.edit(prompt, is_init=True)
-#         print(f"Created app {app_id}")
-#         return sandbox_app
-
-#     print(f"Starting concurrent creation of {num_apps} apps...")
-#     tasks = [create_single_app(i) for i in range(num_apps)]
-#     created_apps = await asyncio.gather(*tasks, return_exceptions=True)
-    
-#     successful_apps = [
-#         sandbox_app for sandbox_app in created_apps 
-#         if isinstance(sandbox_app, SandboxApp)
-#     ]
-    
-#     failed_count = len(created_apps) - len(successful_apps)
-#     if failed_count > 0:
-#         print(f"Warning: {failed_count} apps failed to create")
-    
-#     if successful_apps:
-#         save_apps_to_volume(successful_apps)
-    
-#     return {
-#         "created_apps": len(successful_apps), 
-#         "failed_apps": failed_count,
-#         "app_ids": [app.id for app in successful_apps]
-#     }
+sandbox_image = (
+    modal.Image.from_registry("node:22-slim", add_python="3.12")
+    .env(
+        {
+            "PNPM_HOME": "/root/.local/share/pnpm",
+            "PATH": "$PNPM_HOME:$PATH",
+            "SHELL": "/bin/bash",
+        }
+    )
+    .run_commands(
+        "apt-get update && apt-get install -y curl netcat-openbsd procps net-tools"
+    )
+    .run_commands(
+        "corepack enable && corepack prepare pnpm@latest --activate && pnpm setup && pnpm add -g vite"
+    )
+    .pip_install(
+        "fastapi[standard]",
+    )
+    .pip_install(
+        "httpx",
+    )
+    .add_local_dir("web/vite-app", "/root/vite-app", copy=True)
+    .run_commands(
+        "pnpm install --dir /root/vite-app --force"
+    )
+    .add_local_file("sandbox/startup.sh", "/root/startup.sh", copy=True)
+    .run_commands("chmod +x /root/startup.sh")
+    .add_local_dir("sandbox", "/root/sandbox")
+    .add_local_file("sandbox/server.py", "/root/server.py")
+)
 
 @app.function(
     image=image,
     secrets=[modal.Secret.from_name("anthropic-secret")],
-    volumes={"/data": apps_volume},
+    timeout=3600,
+)
+async def create_sandbox_app(prompt: str) -> str:    
+    print(f"Creating sandbox app with prompt: {prompt}")
+    
+    app_directory = AppDirectory(apps_dict, app, llm_client)
+    print("Initialized app directory")
+    sandbox_app = await SandboxApp.create(app, llm_client, prompt, image=sandbox_image)
+    app_directory.set_app(sandbox_app)
+    print(f"Created image {sandbox_image.object_id}")
+    print(f"Created and saved sandbox app with ID: {sandbox_app.id}")
+    
+    return sandbox_app.id
+
+@app.function(
+    image=image,
+    secrets=[modal.Secret.from_name("anthropic-secret"), modal.Secret.from_name("admin-secret")],
+    min_containers=1
 )
 @modal.concurrent(max_inputs=100)
-@modal.asgi_app()
+@modal.asgi_app(custom_domains=["vibes.modal.chat"])
 def fastapi_app():
     from fastapi import FastAPI, Request, HTTPException
-    from fastapi.responses import JSONResponse, HTMLResponse
+    from fastapi.responses import JSONResponse
     from fastapi.staticfiles import StaticFiles
     from fastapi.templating import Jinja2Templates
+    from pydantic import BaseModel
     import httpx
 
+    app_directory = AppDirectory(apps_dict, app, llm_client)
+    app_directory.load()
 
-    web_app = FastAPI()
+
+    class CreateAppRequest(BaseModel):
+        prompt: str
+        
+    class CreateAppResponse(BaseModel):
+        app_id: str
+    
+    class WriteAppRequest(BaseModel):
+        text: str
+        
+    class TerminateAppRequest(BaseModel):
+        admin_secret: str
+    
+        
+
+    web_app = FastAPI(
+        title="Modal Sandbox API",
+        description="API for creating and managing sandbox applications",
+        version="1.0.0"
+    )
     web_app.mount("/static", StaticFiles(directory="/root/web/static"), name="static")
 
     templates = Jinja2Templates(directory="/root/web/templates")
 
     def _get_app_or_raise(app_id: str) -> SandboxApp:
-        apps = load_apps_from_volume()
-        if app_id not in apps:
+        sandbox_app = app_directory.get_app(app_id)
+        if not sandbox_app:
             raise HTTPException(status_code=404, detail="App not found")
-        return apps[app_id]
-
-    async def _cleanup_dead_sandboxes():
-        """Check all sandboxes and remove dead ones from the apps dictionary"""
-        dead_apps = []
-        apps = load_apps_from_volume()
-        for app_id, sandbox_app in apps.items():
-            try:
-                if not await sandbox_app.is_alive():
-                    print(f"🧹 Removing dead sandbox: {app_id}")
-                    dead_apps.append(app_id)
-            except Exception as e:
-                print(f"Error checking sandbox {app_id}: {str(e)}")
-                dead_apps.append(app_id)
-
-        if dead_apps:
-            existing_data = {}
-            if os.path.exists(DATA_FILE):
-                with open(DATA_FILE, "r") as f:
-                    content = f.read()
-                    if content.strip():
-                        existing_data = json.loads(content)
-            
-            for app_id in dead_apps:
-                if app_id in existing_data:
-                    del existing_data[app_id]
-                    print(f"✅ Removed dead sandbox from volume: {app_id}")
-            
-            with open(DATA_FILE, "w") as f:
-                json.dump(existing_data, f, indent=2)
-            apps_volume.commit()
-
-    async def background_cleanup_task(interval: float = 60.0):
-        while True:
-            await asyncio.sleep(interval)
-            try:
-                load_apps_from_volume()
-                await _cleanup_dead_sandboxes()
-            except Exception as e:
-                print(f"Error in background cleanup: {e}")
-
-    @web_app.on_event("startup")
-    async def start_background_cleanup():
-        asyncio.create_task(background_cleanup_task())
+        return sandbox_app
 
     @web_app.exception_handler(404)
     async def not_found_handler(request: Request, exc):
@@ -220,11 +149,25 @@ def fastapi_app():
 
     @web_app.get("/")
     async def home(request: Request):
-        apps = load_apps_from_volume()
-        app_list = list(apps.keys())
+        print("Fetching home page")
+        apps_dict = await _get_apps_dict()
         return templates.TemplateResponse(
-            name="pages/home.html", context={"request": request, "apps": app_list}
+            name="pages/home.html", context={"request": request, "apps": apps_dict}
         )
+
+    async def _get_apps_dict():
+        # app_directory already loaded on startup
+        # TODO(joy): Passing in the client is unclean, figure out a better way to do this.
+        # async with httpx.AsyncClient() as client:
+        #     await app_directory.cleanup(client)
+        app_directory.load()
+        apps_dict = {}
+        count = 0
+        for app_id, app_metadata in app_directory.apps.items():
+            count += 1
+            apps_dict[app_id] = app_metadata.sandbox_user_tunnel_url
+        return apps_dict
+        
 
     @web_app.get("/app/{app_id}")
     async def app_page(request: Request, app_id: str):
@@ -234,92 +177,273 @@ def fastapi_app():
             context={
                 "request": request,
                 "app_id": app_id,
-                "relay_url": app.sandbox_tunnel_url,
-                "message_history": app.message_history,
+                "app_url": app.data.sandbox_user_tunnel_url,
+                "relay_url": app.data.sandbox_tunnel_url,
+                "message_history": app.data.message_history,
             },
         )
 
-    @web_app.post("/api/create")
-    async def create_app(request: Request):
-        data = await request.json()
-        time = datetime.now().strftime("%Y%m%d%H%M%S")
-        app_id = str(uuid.uuid4()) + f"_{time}"
-        apps = load_apps_from_volume()
-        apps[app_id] = SandboxApp(app_id, app, image, llm_client)
-        await apps[app_id].edit(data["prompt"], is_init=True)
-        save_app_to_volume(app_id, apps[app_id].to_dict())
-        return JSONResponse({"app_id": app_id})
+    @web_app.get("/api/apps")
+    async def get_apps():
+        """Get the list of all apps for live updates"""
+        apps_dict = await _get_apps_dict()
+        print(f"[API /api/apps] Returning {len(apps_dict)} apps")
+        return JSONResponse({"apps": apps_dict})
+
+    @web_app.post("/api/create", response_model=CreateAppResponse)
+    async def create_app(request_data: CreateAppRequest) -> CreateAppResponse:
+        app_id = await create_sandbox_app.remote.aio(request_data.prompt)
+        return CreateAppResponse(app_id=app_id)
 
     @web_app.post("/api/app/{app_id}/write")
-    async def write_app(app_id: str, request: Request):
-        data = await request.json()
-        is_init = data.get("is_init", False)
+    async def write_app(app_id: str, request_data: WriteAppRequest):
         app = _get_app_or_raise(app_id)
         try:
-            response = await app.edit(data["text"], is_init=is_init)
-            return JSONResponse(response.json(), status_code=response.status_code)
+            print(f"Starting edit for app {app_id} with text: {request_data.text[:100] if request_data.text else ''}...")
+            response = await app.edit(request_data.text)
+            print(f"Edit completed, response status: {response.status_code}")
+            app_directory.set_app(app)
+            
+            # Try to parse JSON response, handle both sync and async json() methods
+            try:
+                import inspect
+                json_method = response.json()
+                # Check if json() returns a coroutine (async) or a dict (sync)
+                if inspect.iscoroutine(json_method):
+                    response_data = await json_method
+                else:
+                    response_data = json_method
+                print(f"Successfully parsed response JSON: {response_data}")
+            except Exception as json_error:
+                print(f"Failed to parse JSON response: {json_error}")
+                # If JSON parsing fails, return a generic success response
+                response_data = {"status": "ok"}
+                
+            return JSONResponse(response_data, status_code=response.status_code)
         except Exception as e:
-            print(f"Error writing to relay with data: {data}: {str(e)}")
+            print(f"Error writing to relay with data: {request_data}: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+
+    @web_app.get("/api/app/{app_id}/history")
+    async def get_message_history(app_id: str):
+        """Get the message history for an app"""
+        app = _get_app_or_raise(app_id)
+        history_data = [
+            {"content": msg.content, "type": msg.type.value}
+            for msg in app.data.message_history
+        ]
+        return JSONResponse(
+            {"message_history": history_data},
+            headers={
+                # TODO(joy): Figure out what this does so I'm not blindly vibe coding.
+                "Cache-Control": "no-cache, no-store, must-revalidate",
+                "Pragma": "no-cache",
+                "Expires": "0"
+            }
+        )
+
+    @web_app.get("/api/app/{app_id}/status")
+    async def get_app_status(app_id: str):
+        """Return the current metadata status for the requested app without pinging the sandbox."""
+        app = _get_app_or_raise(app_id)
+        return JSONResponse({"status": app.metadata.status.value})
 
     @web_app.get("/api/app/{app_id}/ping")
     async def ping_app(app_id: str):
         app = _get_app_or_raise(app_id)
-        try:
-            await app.wait_for_ready()
-        except TimeoutError as e:
-            return JSONResponse({"status": "error", "message": str(e)}, status_code=503)
-
-        heartbeat_url = f"{app.sandbox_tunnel_url}/heartbeat"
+        heartbeat_url = f"{app.data.sandbox_tunnel_url}/heartbeat"
         try:
             print(f"Pinging relay at: {heartbeat_url}")
             async with httpx.AsyncClient() as client:
-                response = await client.get(heartbeat_url, timeout=10.0)
+                response = await client.get(heartbeat_url, timeout=2.0)
                 print(f"Ping response status: {response.status_code}")
-                return JSONResponse(response.json(), status_code=response.status_code)
+                # Handle both sync and async json() methods
+                import inspect
+                json_method = response.json()
+                if inspect.iscoroutine(json_method):
+                    response_data = await json_method
+                else:
+                    response_data = json_method
+                return JSONResponse(response_data, status_code=response.status_code)
         except Exception as e:
             print(f"Error pinging relay: {str(e)}")
             return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
-    @web_app.get("/api/app/{app_id}/display", response_class=HTMLResponse)
-    async def display_app(app_id: str):
+    @web_app.post("/api/app/{app_id}/terminate")
+    async def terminate_app(app_id: str, request_data: TerminateAppRequest):
+        """Terminate a sandbox app with admin authentication"""
+        admin_secret = os.getenv("ADMIN_SECRET")
+        if not admin_secret:
+            return JSONResponse({"status": "error", "message": "Admin functionality not configured"}, status_code=503)
+        
+        if request_data.admin_secret != admin_secret:
+            return JSONResponse({"status": "error", "message": "Invalid admin secret"}, status_code=403)
+        
         app = _get_app_or_raise(app_id)
-
         try:
-            await app.wait_for_ready()
-        except TimeoutError:
-            raise HTTPException(status_code=503, detail="Service Unavailable")
+            success = app.terminate()
+            if success:
+                app_directory.remove_app(app_id)
+                return JSONResponse({"status": "success", "message": f"Sandbox {app_id} terminated successfully"})
+            else:
+                return JSONResponse({"status": "error", "message": "Failed to terminate sandbox"}, status_code=500)
+        except Exception as e:
+            print(f"Error terminating sandbox {app_id}: {str(e)}")
+            return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
-        display_url = app.sandbox_user_tunnel_url
-        print(f"Embedding iframe from: {display_url}")
+    @web_app.post("/api/admin/terminate-all")
+    async def terminate_all_sandboxes(request_data: TerminateAppRequest):
+        """Terminate all sandbox apps with admin authentication"""
+        admin_secret = os.getenv("ADMIN_SECRET")
+        if not admin_secret:
+            return JSONResponse({"status": "error", "message": "Admin functionality not configured"}, status_code=503)
+        
+        if request_data.admin_secret != admin_secret:
+            return JSONResponse({"status": "error", "message": "Invalid admin secret"}, status_code=403)
+        
+        app_directory.load()  # Ensure we have the latest apps
+        apps = app_directory.apps.keys()
+        terminated_count = 0
+        failed_count = 0
+        apps_copy = list(apps)
+        
+        for app_id in apps_copy:
+            try:
+                sandbox_app = app_directory.get_app(app_id)
+                if not sandbox_app:
+                    print(f"❌ App {app_id} not found in catalogue")
+                    continue
+                success = sandbox_app.terminate()
+                app_directory.remove_app(app_id)
+                if success:
+                    terminated_count += 1
+                    print(f"✅ Terminated sandbox: {app_id}")
+                else:
+                    failed_count += 1
+                    print(f"❌ Failed to terminate sandbox: {app_id}")
+            except Exception as e:
+                failed_count += 1
+                print(f"❌ Error terminating sandbox {app_id}: {str(e)}")
+        
+        for sandbox in modal.Sandbox.list(app_id=app.app_id):
+            print(f"Sandbox: {sandbox.object_id}")
+            sandbox.terminate()
 
-        iframe_html = f"""
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>App Preview</title>
-            <style>
-                body, html {{
-                    margin: 0;
-                    padding: 0;
-                    height: 100%;
-                }}
-                iframe {{
-                    width: 100%;
-                    height: 100%;
-                    border: none;
-                }}
-            </style>
-        </head>
-        <body>
-            <iframe src="{display_url}" allow="clipboard-write"></iframe>
-        </body>
-        </html>
-        """
-        return HTMLResponse(content=iframe_html)
+        return JSONResponse({
+            "status": "success", 
+            "message": f"Terminated {terminated_count} sandboxes successfully, {failed_count} failed",
+            "terminated": terminated_count,
+            "failed": failed_count
+        })
 
     return web_app
 
 
-f = modal.Function.from_name("modal-vibe", "fastapi_app")
-f.update_autoscaler(min_containers=1)
+@app.function(
+    image=image,
+    secrets=[modal.Secret.from_name("anthropic-secret")],
+    timeout=3600,
+)
+@modal.concurrent(max_inputs=1000)
+async def make_create_app_request(prompt: str):
+    import httpx
+
+    API_URL = "https://modal-labs-joy-dev--modal-vibe-fastapi-app.modal.run"
+    num_retries = 5
+    for i in range(num_retries):
+        try:
+            async with httpx.AsyncClient(timeout=300.0) as client:
+                response = await client.post(f"{API_URL}/api/create", json={"prompt": prompt})
+                response.raise_for_status()
+                result = response.json()
+                app_id = result["app_id"]
+                return app_id
+        except Exception as e:
+            continue
+    raise Exception(f"Failed to create app after {num_retries} retries")
+
+@app.function(schedule=modal.Period(minutes=1))
+async def clean_up_dead_apps():
+    import httpx
+
+    app_directory = AppDirectory(apps_dict, app, llm_client)
+    app_directory.load()  # Load apps for cleanup
+    # TODO(joy): I do not like how these async clients are created. Unclean.
+    # Use more resilient client settings for cleanup
+    limits = httpx.Limits(max_keepalive_connections=10, max_connections=20)
+    timeout = httpx.Timeout(timeout=30.0, connect=10.0, read=10.0)
+    async with httpx.AsyncClient(limits=limits, timeout=timeout) as client:
+        await app_directory.cleanup(client)
+
+@app.function(
+    image=core_image,
+    secrets=[modal.Secret.from_name("anthropic-secret")],
+    timeout=3600,
+)
+@modal.concurrent(max_inputs=1000)
+async def create_app_loadtest_function(num_apps: int = 100):
+    import time
+    import asyncio
+    from typing import Any
+
+    start_time = time.time()
+
+    requested_num = num_apps
+    app_buffers = 30
+    effective_num = requested_num + app_buffers
+
+    API_URL = "https://modal-labs-joy-dev--modal-vibe-fastapi-app.modal.run"
+    if not API_URL:
+        raise ValueError("API_URL environment variable is not set")
+
+    with open("/root/core/prompts.txt", "r") as f:
+        prompts = [p.strip() for p in f if p.strip()]
+    prompts = prompts[:effective_num]
+
+    semaphore = asyncio.Semaphore(120)
+
+    async def create_app_with_limit(prompt: str, index: int) -> Any | None:
+        print(f"Creating app with prompt: {prompt}")
+        async with semaphore:
+            delays = [0, 0.1, 0.5]  # seconds
+            for attempt, delay in enumerate([0, *delays], start=1):
+                if delay:
+                    await asyncio.sleep(delay)
+                try:
+                    return await asyncio.wait_for(
+                        make_create_app_request.remote.aio(prompt),
+                        timeout=30,
+                    )
+                except asyncio.TimeoutError:
+                    if attempt == len(delays) + 1:
+                        print(f"[{index}] timeout on prompt")
+                except Exception as e:
+                    if attempt == len(delays) + 1:
+                        print(f"[{index}] failed: {e!r}")
+            return None
+
+    tasks = [asyncio.create_task(create_app_with_limit(p, i)) for i, p in enumerate(prompts)]
+    results = await asyncio.gather(*tasks)  # no return_exceptions
+
+    successful_apps = [r for r in results if r is not None]
+    app_count = len(successful_apps)
+
+    app_directory = AppDirectory(apps_dict, app, llm_client)
+    try:
+        await asyncio.to_thread(app_directory.load)
+    except Exception:
+        app_directory.load()
+    actual_app_count = len(app_directory.apps)
+
+    time_taken = time.time() - start_time
+    msg = f"✅ Created {app_count}/{len(prompts)} apps ({actual_app_count} in directory) in {time_taken:.2f}s"
+    print(msg)
+    return {
+        "requested": requested_num,
+        "effective": len(prompts),
+        "created": app_count,
+        "directory_count": actual_app_count,
+        "duration_sec": time_taken,
+    }

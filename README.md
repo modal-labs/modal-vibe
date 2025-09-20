@@ -28,7 +28,6 @@ To deploy to Modal, copy the `.env.example` and add your `ANTHROPIC_API_KEY`. Al
 Then, run the following code block:
 
 ```bash
-modal volume create sandbox-apps-volume
 modal deploy -m main
 ```
 

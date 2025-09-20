@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="flex flex-col lg:flex-row gap-4 sm:gap-6 py-4 sm:p-6 min-h-[calc(100vh-100px)]">
+<div class="flex flex-col lg:flex-row gap-4 sm:gap-6 py-4 sm:p-6 h-[calc(100vh-120px)]">
 
   <!-- Left side: Message History -->
   <div class="w-full lg:w-96 lg:flex-shrink-0">
@@ -51,12 +51,12 @@
       </div>
 
 
-    <form id="editForm" class="flex-1 flex flex-col p-4 sm:p-6">
+    <form id="editForm" class="flex flex-col p-4 sm:p-6">
         <textarea
           id="textInput"
-          rows="4"
+          rows="2"
           placeholder="Enter your edits here…"
-          class="flex-1 resize-none border border-white/10 rounded-lg p-4 bg-white/10 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 transition"
+          class="resize-none border border-white/10 rounded-lg p-4 bg-white/10 text-gray-200 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-green-400 transition"
         ></textarea>
 
         <button
@@ -81,29 +81,113 @@
 
   </div>
 
-  <div class="flex-1 h-[400px] sm:h-[600px] lg:h-auto">
-    <div class="bg-white/10 shadow-2xl rounded-xl overflow-hidden h-full border border-white/10">
-      <div class="flex justify-between px-4 sm:px-6 py-4 border-b border-white/10">
-        <h2 class="text-xl sm:text-2xl font-semibold text-white">Live Preview</h2>
-        <p id="statusDisplay" class="text-sm text-gray-400"></p>
+  <div class="flex-1 min-h-[400px] sm:min-h-[600px] lg:h-full">
+    <div class="bg-white/10 shadow-2xl rounded-xl h-full border border-white/10 flex flex-col">
+      <div class="flex justify-between items-center px-4 sm:px-6 py-4 border-b border-white/10">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-semibold text-white">Live Preview</h2>
+          <p class="text-sm text-gray-400 flex items-center gap-2">
+            Live URL: <a href="{{ app_url }}" class="text-white hover:text-gray-300">{{ app_url }}</a>
+            <button onclick="copyToClipboard('{{ app_url }}', event)" class="text-gray-400 hover:text-white transition-colors" title="Copy URL">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+              </svg>
+            </button>
+          </p>
+        </div>
+        <div class="flex items-center gap-4">
+          <p id="statusDisplay" class="text-sm text-gray-400"></p>
+          <button
+            id="terminateButton"
+            class="bg-transparent hover:bg-white/10 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors duration-200 border border-white hover:border-white/80"
+            onclick="showTerminateModal()"
+          >
+            🗑️
+          </button>
+        </div>
       </div>
-      <iframe
-        id="previewFrame"
-        src="/api/app/{{ app_id }}/display"
-        class="w-full h-full border-t border-white/10 bg-transparent transition-opacity duration-300 opacity-100"
-        style="background-color: transparent !important;"
-        title="App Preview"
-      ></iframe>
+      <div class="flex-1 relative">
+        <!-- Lightweight loading indicator -->
+        <div id="previewSkeleton" class="absolute inset-0 w-full h-full flex items-center justify-center bg-black/20 pointer-events-none z-10">
+          <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div>
+            <p class="text-sm text-gray-400 mt-2">Loading preview...</p>
+          </div>
+        </div>
+        <iframe
+          id="previewFrame"
+          src="{{ app_url }}"
+          class="absolute inset-0 w-full h-full bg-transparent"
+          style="background-color: transparent !important; border: none;"
+          title="App Preview"
+          allow="clipboard-write"
+        ></iframe>
+      </div>
     </div>
   </div>
 
 </div>
+
+<div id="terminateModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+  <div class="bg-gray-800 rounded-lg p-6 w-96 border border-white/10">
+    <h3 class="text-xl font-semibold text-white mb-4">🚨 Terminate Sandbox</h3>
+    <p class="text-gray-300 mb-4">
+      This will permanently destroy the sandbox. This action cannot be undone.
+    </p>
+    <div class="mb-4">
+      <label for="adminSecretInput" class="block text-sm font-medium text-gray-300 mb-2">
+        Admin Secret:
+      </label>
+      <input
+        type="password"
+        id="adminSecretInput"
+        class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+        placeholder="Enter admin secret"
+      />
+    </div>
+    <div class="flex gap-3 justify-end">
+      <button
+        onclick="hideTerminateModal()"
+        class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors duration-200"
+      >
+        Cancel
+      </button>
+      <button
+        onclick="confirmTerminate()"
+        id="confirmTerminateButton"
+        class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <span id="terminateButtonText">Terminate</span>
+        <svg class="w-4 h-4 inline-block ml-2 hidden animate-spin" id="terminateSpinner" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block scripts %}
 <script>
 const APP_ID = '{{ app_id }}';
 const PROMPT = '{{ prompt }}';
+
+function copyToClipboard(text, event) {
+    navigator.clipboard.writeText(text).then(() => {
+        window.toast.show('URL copied to clipboard!', 'success', 3000);
+        
+        const button = event.target.closest('button');
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+        setTimeout(() => {
+            button.innerHTML = originalHTML;
+        }, 1000);
+    }).catch(err => {
+        console.error('Failed to copy: ', err);
+        window.toast.show('Failed to copy URL to clipboard', 'error', 3000);
+    });
+}
 
 function setLoading(isLoading) {
     const button = document.getElementById('applyButton');
@@ -113,6 +197,78 @@ function setLoading(isLoading) {
     button.disabled = isLoading;
     spinner.classList.toggle('hidden', !isLoading);
     buttonText.textContent = isLoading ? 'Updating...' : 'Apply Changes';
+}
+
+async function updateMessageHistory() {
+    try {
+        const res = await fetch(`/api/app/${APP_ID}/history?t=${Date.now()}`, {
+            cache: 'no-cache',
+            headers: {
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
+            }
+        });
+        if (res.ok) {
+            const data = await res.json();
+            renderMessageHistory(data.message_history);
+        }
+    } catch (err) {
+        console.error('Failed to update message history:', err);
+    }
+}
+
+function renderMessageHistory(messages) {
+    const historyContainer = document.querySelector('.flex-1.overflow-y-auto.p-4');
+    if (!historyContainer) return;
+    
+    if (messages && messages.length > 0) {
+        historyContainer.innerHTML = `
+            <div class="space-y-3">
+                ${messages.map(message => {
+                    if (message.type === "user") {
+                        return `
+                            <div class="flex justify-end">
+                                <div class="bg-green-700 rounded-lg p-4 border border-white/10">
+                                    <p class="text-sm text-white leading-relaxed">${escapeHtml(message.content)}</p>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        return `
+                            <div class="flex">
+                                <div class="bg-white/10 rounded-lg p-4 border border-white/10">
+                                    <p class="text-sm text-white">${escapeHtml(message.content)}</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }).join('')}
+            </div>
+        `;
+        
+        // Auto-scroll to bottom after rendering new messages
+        setTimeout(() => {
+            historyContainer.scrollTop = historyContainer.scrollHeight;
+        }, 100);
+    } else {
+        historyContainer.innerHTML = `
+            <div class="flex items-center justify-center h-full text-white">
+                <div class="text-center">
+                    <svg class="w-12 h-12 mx-auto mb-4 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                    <p class="text-sm">No messages yet</p>
+                    <p class="text-xs text-gray-500 mt-1">Your edit history will appear here</p>
+                </div>
+            </div>
+        `;
+    }
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 async function updateContent(text) {
@@ -125,7 +281,16 @@ async function updateContent(text) {
         });
         
         if (res.ok) {
-            window.location.reload();
+            const iframe = document.getElementById('previewFrame');
+            const currentSrc = iframe.src;
+            iframe.src = '';
+            setTimeout(() => {
+                iframe.src = currentSrc;
+            }, 100);
+            
+            await updateMessageHistory();
+            
+            document.getElementById('textInput').value = '';
         } else {
             const data = await res.json().catch(() => ({ error: 'Failed to update content' }));
             window.toast.show(data.error || 'Failed to update content');
@@ -150,30 +315,43 @@ document.getElementById('textInput').addEventListener('keydown', function (e) {
 document.getElementById('textInput').removeEventListener('input', () => {});
 
 async function checkHealth(updateUI = false) {
-  const statusDisplay = document.getElementById('statusDisplay');
   try {
-    const res = await fetch(`/api/app/${APP_ID}/ping`);
-    const isOnline = res.ok;
-    if (updateUI && statusDisplay) {
-      updateStatusDisplay(isOnline);
+    const res = await fetch(`/api/app/${APP_ID}/status`);
+    if (!res.ok) throw new Error('Failed to fetch status');
+    const data = await res.json();
+    const status = (data.status || 'offline').toLowerCase();
+    if (updateUI) {
+      updateStatusDisplay(status);
     }
-    if (!isOnline) {
-      window.toast.show('Sandbox is offline');
+  } catch (err) {
+    if (updateUI) {
+      updateStatusDisplay('offline');
     }
-  } catch {
-    if (updateUI && statusDisplay) {
-      updateStatusDisplay(false);
-    }
-    window.toast.show('Could not connect to sandbox');
   }
 }
 
-function updateStatusDisplay(isOnline) {
+function updateStatusDisplay(status) {
   const statusDisplay = document.getElementById('statusDisplay');
   if (!statusDisplay) return;
-  statusDisplay.textContent = isOnline ? 'Sandbox Status: Online \u{1F7E2}' : 'Sandbox Status: Offline \u{1F534}';
-  statusDisplay.classList.remove(isOnline ? 'text-red-400' : 'text-green-400');
-  statusDisplay.classList.add(isOnline ? 'text-green-400' : 'text-red-400');
+  let text = '';
+  let colorClass = '';
+  switch (status) {
+    case 'active':
+      text = 'Sandbox Status: Active \u{1F7E2}';
+      colorClass = 'text-green-400';
+      break;
+    case 'ready':
+      text = 'Sandbox Status: Ready \u{1F535}';
+      colorClass = 'text-blue-400';
+      break;
+    default:
+      text = 'Sandbox Status: Offline \u{1F534}';
+      colorClass = 'text-red-400';
+      break;
+  }
+  statusDisplay.textContent = text;
+  statusDisplay.classList.remove('text-green-400', 'text-red-400', 'text-blue-400');
+  statusDisplay.classList.add(colorClass);
 }
 
 setInterval(() => checkHealth(true), 30000);
@@ -186,27 +364,107 @@ if (statusBtn) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Load the latest message history on page load
+  updateMessageHistory();
+  
   const iframe = document.getElementById('previewFrame');
-  iframe.src = `/api/app/${APP_ID}/display`;
-  iframe.onload = () => {
-    try {
-      const doc = iframe.contentDocument;
-      if (doc && !doc.querySelector('meta[name="viewport"]')) {
-        const m = doc.createElement('meta');
-        m.name = 'viewport';
-        m.content = 'width=device-width, initial-scale=1.0';
-        doc.head.appendChild(m);
+  const skeleton = document.getElementById('previewSkeleton');
+  
+  if (iframe) {
+    // Hide skeleton as soon as iframe starts loading (not when fully loaded)
+    // This gives immediate visual feedback
+    setTimeout(() => {
+      if (skeleton) {
+        skeleton.style.opacity = '0';
+        skeleton.style.transition = 'opacity 0.3s ease-out';
+        setTimeout(() => skeleton.classList.add('hidden'), 300);
       }
-    } catch {}
-  };
+    }, 500); // Small delay to show loading indicator briefly
+    
+    // Optional: Hide skeleton when iframe fully loads (as backup)
+    iframe.addEventListener('load', () => {
+      if (skeleton && !skeleton.classList.contains('hidden')) {
+        skeleton.classList.add('hidden');
+      }
+    });
+  }
 });
 
-
-const previewFrame = document.getElementById('previewFrame');
-if (previewFrame) {
-  previewFrame.addEventListener('load', () => {
-    previewFrame.style.opacity = '1';
-  });
+function showTerminateModal() {
+  const modal = document.getElementById('terminateModal');
+  const input = document.getElementById('adminSecretInput');
+  modal.classList.remove('hidden');
+  setTimeout(() => input.focus(), 100);
 }
+
+function hideTerminateModal() {
+  const modal = document.getElementById('terminateModal');
+  const input = document.getElementById('adminSecretInput');
+  modal.classList.add('hidden');
+  input.value = '';
+}
+
+function setTerminateLoading(isLoading) {
+  const button = document.getElementById('confirmTerminateButton');
+  const spinner = document.getElementById('terminateSpinner');
+  const buttonText = document.getElementById('terminateButtonText');
+  
+  button.disabled = isLoading;
+  spinner.classList.toggle('hidden', !isLoading);
+  buttonText.textContent = isLoading ? 'Terminating...' : 'Terminate';
+}
+
+async function confirmTerminate() {
+  const adminSecret = document.getElementById('adminSecretInput').value.trim();
+  
+  if (!adminSecret) {
+    window.toast.show('Please enter the admin secret');
+    return;
+  }
+  
+  try {
+    setTerminateLoading(true);
+    const res = await fetch(`/api/app/${APP_ID}/terminate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ admin_secret: adminSecret }),
+    });
+    
+    const data = await res.json();
+    
+    if (res.ok) {
+      window.toast.show('Sandbox terminated successfully');
+      hideTerminateModal();
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
+    } else {
+      let errorMessage = data.error || data.message || 'Failed to terminate sandbox';
+      if (res.status === 403) {
+        errorMessage = 'Invalid admin secret';
+      } else if (res.status === 503) {
+        errorMessage = 'Admin functionality not configured';
+      }
+      window.toast.show(errorMessage);
+    }
+  } catch (err) {
+    window.toast.show('Error: Could not connect to the server');
+  } finally {
+    setTerminateLoading(false);
+  }
+}
+
+document.getElementById('adminSecretInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    confirmTerminate();
+  }
+});
+
+document.getElementById('terminateModal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    hideTerminateModal();
+  }
+});
 </script>
 {% endblock %}
