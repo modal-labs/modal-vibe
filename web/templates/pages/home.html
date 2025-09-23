@@ -3,14 +3,14 @@
 {% block title %}Modal Vibe - Create Apps by Chatting with AI{% endblock %}
 
 {% block content %}
-<div class="text-center py-20">
+<div class="text-center py-12 md:py-20 pb-16 md:pb-24">
     <!-- Hero Section -->
-    <div class="mb-16 min-h-[400px]">
-        <h1 class="text-7xl font-medium tracking-tight mb-6 gradient-text">Modal Vibe</h1>
-        <p class="text-xl font-normal tracking-tight text-[#8491a5] mb-12 max-w-2xl mx-auto">Vibe code your websites with AI, powered by Modal</p>
+    <div class="mb-8 md:mb-16 min-h-[300px] md:min-h-[400px]">
+        <h1 class="text-5xl md:text-7xl font-medium tracking-tight mb-4 md:mb-6 gradient-text">Modal Vibe</h1>
+        <p class="text-lg md:text-xl font-normal tracking-tight text-[#8491a5] mb-8 md:mb-12 max-w-2xl mx-auto px-4">Vibe code your websites with AI, powered by <a class="text-[#dcf2de] cursor-pointer" href="https://modal.com/docs/guide/sandbox">Modal Sandboxes</a></p>
 
         <div class="flex justify-center mb-8">
-            <div id="createAppDiv" class="bg-white/5 rounded-xl p-8 max-w-xl w-full shadow-2xl border border-[rgba(255,255,255,0.05)] backdrop-blur-md transition-all duration-300">
+            <div id="createAppDiv" class="bg-white/5 rounded-xl p-4 md:p-8 max-w-xl w-full mx-4 md:mx-auto shadow-2xl border border-[rgba(255,255,255,0.05)] backdrop-blur-md transition-all duration-300">
                 <div class="flex items-center space-x-3 mb-4">
                     <div class="w-3 h-3 bg-red-500 rounded-full"></div>
                     <div class="w-3 h-3 bg-yellow-500 rounded-full"></div>
@@ -25,14 +25,9 @@
                         placeholder="What's the vibe today?" 
                         class="w-full px-4 py-3 border border-[rgba(255,255,255,0.1)] rounded-lg bg-white/5 text-gray-300 placeholder-gray-500 tracking-tight focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-[#000000] disabled:border-black"
                     >
-                    <div class="absolute right-3 top-1/2 transform -translate-y-1/2">
-                        <svg class="w-5 h-5 text-[#8491a5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                        </svg>
-                    </div>
                 </div>
                 
-                <button id="createAppBtn" onclick="createApp()" class="btn-modal w-full py-3 px-8 rounded-lg text-lg transition duration-200 font-medium tracking-tight">
+                <button id="createAppBtn" onclick="createApp()" class="btn-modal w-full py-3 px-4 md:px-8 rounded-lg text-base md:text-lg transition duration-200 font-medium tracking-tight disabled:opacity-50 disabled:cursor-not-allowed" disabled>
                     Create App
                 </button>
                 
@@ -46,36 +41,101 @@
         </div>
     </div>
 
-    <div class="mt-20 rounded-xl p-8 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] backdrop-blur-md">
-        <h2 class="text-3xl font-medium tracking-tight mb-4 gradient-text">Collaborate and Create</h2>
-        <p class="text-[#8491a5] mb-8 text-lg tracking-tight">
-            You can see what other people are building and build on top of their work.
-        </p>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"> 
-            {% for app_id in apps %}
-                <a href="/app/{{ app_id }}" class="transform transition-all duration-200 hover:scale-[1.02]">
-                    <div class="border border-[rgba(255,255,255,0.05)] rounded-xl p-4 bg-[rgba(255,255,255,0.02)] backdrop-blur-md">
-                        <iframe
-                            id="previewFrame"
-                            src="/api/app/{{ app_id }}/display"
-                            class="w-full h-full border-t border-[rgba(255,255,255,0.05)]"
-                            title="App Preview"
-                        ></iframe>
+    <!-- Collaborate and Create Section -->
+    <div class="mt-12 md:mt-20">
+        <div class="rounded-xl p-4 md:p-8 bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] mx-2 md:mx-0">
+            <h2 class="text-2xl md:text-3xl font-medium tracking-tight mb-4 gradient-text">Collaborate and Create</h2>
+            
+            <!-- Giant Flip Counter -->
+            <div class="flip-counter-container my-8 md:my-12 flex flex-col md:flex-row justify-center items-center gap-4 md:gap-0">
+                <div class="flip-counter">
+                    <div class="flip-digit-container" id="flipDigit1">
+                        <div class="flip-digit">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">0</div>
+                                    <div class="flip-card-back">0</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                </a>
-            {% endfor %}
-            {% if apps|length == 0 %}
-                <div class="border border-[rgba(255,255,255,0.05)] rounded-xl p-8 bg-[rgba(255,255,255,0.02)] backdrop-blur-md flex flex-col items-center justify-center">
+                    <div class="flip-digit-container" id="flipDigit2">
+                        <div class="flip-digit">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">0</div>
+                                    <div class="flip-card-back">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flip-digit-container" id="flipDigit3">
+                        <div class="flip-digit">
+                            <div class="flip-card">
+                                <div class="flip-card-inner">
+                                    <div class="flip-card-front">0</div>
+                                    <div class="flip-card-back">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flip-counter-label md:ml-8">
+                    <div class="text-4xl md:text-6xl font-bold text-white/90">APPS</div>
+                    <div class="text-lg md:text-xl text-[#8491a5] mt-1 md:mt-2">AND COUNTING</div>
+                </div>
+            </div>
+            
+            <p class="text-[#8491a5] mb-0 text-base md:text-lg tracking-tight px-2 md:px-0">
+                You can see what other people are building and build on top of their work.
+            </p>
+        </div>
+    </div>
+    
+    <!-- Apps Content Section -->
+    <div class="mt-8">
+        <div id="appsContent">
+            {% if apps and apps|length > 0 %}
+                <div id="featuredAppsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
+                    <!-- First 6 apps (2 rows of 3) will be loaded here -->
+                </div>
+                <div id="regularAppsContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4 mb-8">
+                    <!-- Remaining apps (6 per row) will be loaded here -->
+                </div>
+                
+                <div id="loadMoreContainer" class="text-center mt-8">
+                    <div id="loadingIndicator" class="hidden mt-4">
+                        <div class="inline-flex items-center px-4 py-2 text-sm text-gray-400">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Loading more apps...
+                        </div>
+                    </div>
+                    <div id="noMoreApps" class="hidden mt-4 text-gray-500 text-sm">
+That's all the apps for now!
+                    </div>
+                </div>
+            {% else %}
+                <div id="noAppsMessage" class="border border-[rgba(255,255,255,0.05)] rounded-xl p-8 bg-[rgba(255,255,255,0.02)] backdrop-blur-md flex flex-col items-center justify-center h-64">
                     <h3 class="text-xl font-medium tracking-tight mb-2 gradient-text">No apps yet</h3>
                     <p class="text-[#8491a5] tracking-tight">Why don't you vibe one up?</p>
                 </div>
-                {% for i in range(5) %}
-                    <div class="border border-[rgba(255,255,255,0.05)] rounded-xl p-8 bg-[rgba(255,255,255,0.02)] backdrop-blur-md flex flex-col items-center justify-center">
-                        <h3 class="text-xl font-medium tracking-tight mb-2 gradient-text">...</h3>
-                        <p class="text-[#8491a5] tracking-tight">..</p>
-                    </div>
-                {% endfor %}
             {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Banner -->
+<div class="fixed bottom-0 left-0 right-0 bg-[rgba(0,0,0,0.8)] backdrop-blur-md border-t border-[rgba(255,255,255,0.1)] p-2 md:p-4 z-50">
+    <div class="text-center flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
+        <p class="text-xs sm:text-sm md:text-base text-[#8491a5] tracking-tight">
+            There are <span id="appCounter" class="text-[#00f10f] font-medium">{{ apps|length if apps is mapping else 0 }}</span> people vibing right now
+        </p>
+        <div id="liveIndicator" class="flex items-center gap-1 sm:gap-2">
+            <div class="w-2 h-2 bg-[#00f10f] rounded-full animate-pulse"></div>
+            <span class="text-xs text-[#00f10f] tracking-tight">LIVE</span>
         </div>
     </div>
 </div>
@@ -83,6 +143,85 @@
 
 {% block scripts %}
 <style>
+html {
+    scroll-behavior: smooth;
+    overflow-x: hidden;
+    max-width: 100vw;
+}
+
+body {
+    overflow-x: hidden;
+    max-width: 100vw;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth scrolling for all elements */
+* {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Iframe scaling and overflow prevention */
+.iframe-container {
+    position: relative;
+    background: rgba(255, 255, 255, 0.02);
+    will-change: transform;
+    contain: layout style paint;
+}
+
+.scaled-iframe {
+    transform-origin: top left;
+    width: 200% !important;
+    height: 200% !important;
+    transform: scale(0.5) translateZ(0);
+    will-change: transform;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    -moz-backface-visibility: hidden;
+    perspective: 1000px;
+}
+
+/* For featured (larger) app cards, use less scaling */
+.grid-cols-1.sm\\:grid-cols-2.lg\\:grid-cols-3 .scaled-iframe {
+    width: 150% !important;
+    height: 150% !important;
+    transform: scale(0.667) translateZ(0);
+}
+
+/* On mobile, scale more aggressively for better fit */
+@media (max-width: 640px) {
+    .scaled-iframe {
+        width: 300% !important;
+        height: 300% !important;
+        transform: scale(0.333) translateZ(0);
+    }
+}
+
+/* Re-enable pointer events on hover for interaction */
+.transform:hover .scaled-iframe {
+    pointer-events: auto;
+}
+
+/* Performance optimizations for smooth scrolling */
+.grid {
+    will-change: scroll-position;
+}
+
+/* Optimize app cards */
+.transform {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* Reduce repaints during scroll */
+.fixed {
+    transform: translateZ(0);
+    will-change: transform;
+}
+
+
 @keyframes shimmer {
     0% {
         background-position: -300px 0;
@@ -137,15 +276,988 @@
         left: 100%;
     }
 }
+
+/* Sparkle animation styles */
+@keyframes sparkle {
+    0%, 100% {
+        opacity: 0;
+        transform: scale(0) rotate(0deg);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1) rotate(180deg);
+    }
+}
+
+.sparkle-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: visible;
+    border-radius: 0.75rem;
+    z-index: 20;
+}
+
+.sparkle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    opacity: 0;
+    mix-blend-mode: normal;
+}
+
+.sparkle:nth-child(1) {
+    top: 10%;
+    left: 10%;
+}
+
+.sparkle:nth-child(2) {
+    top: 20%;
+    right: 15%;
+}
+
+.sparkle:nth-child(3) {
+    bottom: 15%;
+    left: 20%;
+}
+
+.sparkle:nth-child(4) {
+    top: 40%;
+    left: 5%;
+}
+
+.sparkle:nth-child(5) {
+    bottom: 20%;
+    right: 10%;
+}
+
+.sparkle:nth-child(6) {
+    top: 15%;
+    left: 50%;
+}
+
+.sparkle:nth-child(7) {
+    bottom: 30%;
+    right: 30%;
+}
+
+.sparkle:nth-child(8) {
+    top: 60%;
+    right: 5%;
+}
+
+/* Apply animation on hover */
+a:hover .sparkle:nth-child(1) { animation: sparkle 1.5s ease-in-out infinite 0s; }
+a:hover .sparkle:nth-child(2) { animation: sparkle 1.5s ease-in-out infinite 0.2s; }
+a:hover .sparkle:nth-child(3) { animation: sparkle 1.5s ease-in-out infinite 0.4s; }
+a:hover .sparkle:nth-child(4) { animation: sparkle 1.5s ease-in-out infinite 0.6s; }
+a:hover .sparkle:nth-child(5) { animation: sparkle 1.5s ease-in-out infinite 0.8s; }
+a:hover .sparkle:nth-child(6) { animation: sparkle 1.5s ease-in-out infinite 1s; }
+a:hover .sparkle:nth-child(7) { animation: sparkle 1.5s ease-in-out infinite 1.2s; }
+a:hover .sparkle:nth-child(8) { animation: sparkle 1.5s ease-in-out infinite 1.4s; }
+
+/* Flip Counter Styles */
+.flip-counter {
+    display: flex;
+    gap: 4px;
+    perspective: 1000px;
+}
+
+@media (min-width: 768px) {
+    .flip-counter {
+        gap: 8px;
+    }
+}
+
+.flip-digit-container {
+    position: relative;
+    width: 60px;
+    height: 80px;
+}
+
+@media (min-width: 768px) {
+    .flip-digit-container {
+        width: 120px;
+        height: 160px;
+    }
+}
+
+.flip-digit {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.flip-card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+}
+
+.flip-card-inner {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background: linear-gradient(135deg, #1a1a2e, #0f0f1e);
+    border-radius: 12px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.5),
+        inset 0 2px 4px rgba(255, 255, 255, 0.1),
+        0 0 60px rgba(34, 197, 94, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    font-weight: 900;
+    color: #fff;
+    text-shadow: 
+        0 0 20px rgba(34, 197, 94, 0.8),
+        0 0 40px rgba(34, 197, 94, 0.4);
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+    overflow: hidden;
+}
+
+@media (min-width: 768px) {
+    .flip-card-inner {
+        font-size: 96px;
+    }
+}
+
+.flip-card-front,
+.flip-card-back {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+}
+
+.flip-card-front {
+    z-index: 2;
+}
+
+.flip-card-back {
+    transform: rotateX(180deg);
+}
+
+/* Flip animation */
+.flip-digit.flipping .flip-card-inner {
+    animation: flipAnimation 0.6s ease-in-out;
+    transform-origin: center center;
+}
+
+@keyframes flipAnimation {
+    0% {
+        transform: rotateX(0deg);
+    }
+    50% {
+        transform: rotateX(-90deg);
+    }
+    100% {
+        transform: rotateX(0deg);
+    }
+}
+
+/* Divider line effect in the middle of each digit */
+.flip-card-inner::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 10;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* Glow effect on hover */
+.flip-digit-container:hover .flip-card-inner {
+    box-shadow: 
+        0 10px 60px rgba(0, 0, 0, 0.6),
+        inset 0 2px 4px rgba(255, 255, 255, 0.2),
+        0 0 80px rgba(34, 197, 94, 0.4);
+}
+
+.flip-counter-label {
+    animation: fadeInUp 1s ease-out 0.5s both;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 </style>
 
 <script>
+const APPS_DICT = JSON.parse('{{ apps|tojson|safe }}');
+const ALL_APPS = Object.keys(APPS_DICT);
+
+// Sort apps to put featured ones first
+const FEATURED_APPS = ALL_APPS.filter(id => APPS_DICT[id]?.is_featured === true);
+const NON_FEATURED_APPS = ALL_APPS.filter(id => APPS_DICT[id]?.is_featured !== true);
+const SORTED_APPS = [...FEATURED_APPS, ...NON_FEATURED_APPS];
+
+const FEATURED_APPS_COUNT = 6; // First 6 apps are featured
+const REGULAR_APPS_PER_PAGE = 24; // Load 24 regular apps at a time for smoother scrolling
+let currentPage = 0;
+let loadedApps = [];
+
+// Source of truth (sorted list + map)
+let ALL_APPS_LIST = SORTED_APPS.slice();  // Use sorted order with featured first
+let APPS_MAP = { ...APPS_DICT };       // id -> app data (url, title, and is_featured)
+
+// Polling configuration
+const POLL_MIN_MS = 3000;     // start at 3s
+const POLL_MAX_MS = 15000;    // back off to 15s on errors/idle
+let pollDelay = POLL_MIN_MS;
+let pollTimer = null;
+let pollInFlight = false;
+let pollAbort = null;
+let lastVersion = 0; // optional: if server can return a monotonic version/etag
+
+// Render state tracking
+const RenderState = {
+  featuredIds: new Set(),  // actually rendered in featured
+  regularIds: new Set(),   // actually rendered in regular
+};
+
+// Flip Counter Functions
+let currentCounterValue = 0;
+let targetCounterValue = 0;
+let flipAnimationInProgress = false;
+
+function updateFlipCounter(newValue) {
+    targetCounterValue = Math.min(999, newValue); // Max 3 digits
+    if (!flipAnimationInProgress) {
+        animateFlipCounter();
+    }
+}
+
+function animateFlipCounter() {
+    if (currentCounterValue === targetCounterValue) {
+        flipAnimationInProgress = false;
+        return;
+    }
+    flipAnimationInProgress = true;
+
+    const remaining = Math.abs(targetCounterValue - currentCounterValue);
+    // If large jump, skip in chunks so total anim time is bounded
+    const step = remaining > 20 ? Math.ceil(remaining / 5) : 1; // at most ~5 frames
+    const increment = currentCounterValue < targetCounterValue ? step : -step;
+
+    setTimeout(() => {
+        currentCounterValue += increment;
+        // clamp
+        if ((increment > 0 && currentCounterValue > targetCounterValue) ||
+            (increment < 0 && currentCounterValue < targetCounterValue)) {
+            currentCounterValue = targetCounterValue;
+        }
+        setFlipDigits(currentCounterValue);
+        animateFlipCounter();
+    }, 50);
+}
+
+function setFlipDigits(value) {
+    const digits = String(value).padStart(3, '0').split('');
+    
+    digits.forEach((digit, index) => {
+        const digitContainer = document.getElementById(`flipDigit${index + 1}`);
+        if (digitContainer) {
+            const flipCard = digitContainer.querySelector('.flip-digit');
+            const front = digitContainer.querySelector('.flip-card-front');
+            const back = digitContainer.querySelector('.flip-card-back');
+            
+            // Only animate if the digit actually changed
+            if (front.textContent !== digit) {
+                // Set the new value on the back
+                back.textContent = digit;
+                
+                // Add flipping class to trigger animation
+                flipCard.classList.add('flipping');
+                
+                // After animation halfway, update front and remove class
+                setTimeout(() => {
+                    front.textContent = digit;
+                    setTimeout(() => {
+                        flipCard.classList.remove('flipping');
+                    }, 300);
+                }, 300);
+            }
+        }
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function getRandomSparkleColor() {
+    const colors = [
+        { main: '#00f10f', glow: '#00f10f' }, // Green
+        { main: '#ffff00', glow: '#ffd700' }, // Yellow
+        { main: '#00ffff', glow: '#00bfff' }, // Cyan
+        { main: '#00ff00', glow: '#00ff00' }, // Lime
+        { main: '#ffcc00', glow: '#ff9900' }, // Orange
+        { main: '#00ff99', glow: '#00cc77' }, // Mint
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+}
+
+function createAppCard(appId, isFeatured = false) {
+    const card = document.createElement('a');
+    card.href = `/app/${appId}`;
+    card.className = 'transform transition-all duration-200 hover:scale-[1.02] block';
+    
+    // Use aspect ratio classes instead of fixed heights
+    // Featured: 16:9 aspect ratio, Regular: 4:3 aspect ratio
+    const containerClass = isFeatured 
+        ? "border border-gray-700/50 rounded-xl bg-[rgba(255,255,255,0.02)] backdrop-blur-md overflow-hidden"
+        : "border border-gray-700/50 rounded-xl bg-[rgba(255,255,255,0.02)] backdrop-blur-md overflow-hidden";
+    
+    const aspectClass = "aspect-[4/3]";
+    
+    // Get app data from APPS_MAP
+    const appData = APPS_MAP[appId];
+    const sandboxUrl = typeof appData === 'string' ? appData : (appData?.url || `/api/app/${appId}/display`);
+    const appTitle = typeof appData === 'object' ? (appData?.title || '') : '';
+    
+    // Truncate title if too long
+    const displayTitle = appTitle ? (appTitle.length > 50 ? appTitle.substring(0, 15) + '...' : appTitle) : '';
+    
+    // Generate random sparkle colors
+    const sparkles = Array.from({length: 8}, () => {
+        const color = getRandomSparkleColor();
+        return `<span class="sparkle" style="background: radial-gradient(circle, ${color.main} 0%, ${color.glow} 40%, transparent 70%); box-shadow: 0 0 20px ${color.glow}, 0 0 40px ${color.main}, inset 0 0 8px rgba(255,255,255,0.8); filter: drop-shadow(0 0 6px ${color.glow});"></span>`;
+    }).join('');
+    
+    const isFeaturedApp = appData?.is_featured === true;
+    
+    card.innerHTML = `
+        <div class="${containerClass} relative">
+            ${isFeaturedApp ? `
+            <div class="absolute top-2 right-2 z-30 bg-yellow-400 rounded-full p-1">
+                <svg class="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                </svg>
+            </div>
+            ` : ''}
+            <div class="sparkle-container">
+                ${sparkles}
+            </div>
+            <div class="${aspectClass} relative overflow-hidden rounded iframe-container" data-src="${sandboxUrl}">
+                <div class="absolute inset-0 w-full h-full bg-gray-900/50 flex items-center justify-center iframe-placeholder">
+                    <div class="w-8 h-8 border-2 border-gray-600 border-t-green-500 rounded-full animate-spin"></div>
+                </div>
+                ${displayTitle ? `
+                <div class="absolute bottom-0 left-0 right-0 bg-black p-2 z-10">
+                    <div class="text-xs font-light italic tracking-wide text-white text-left" style="letter-spacing: 0.5px;" title="${escapeHtml(appTitle)}">${escapeHtml(displayTitle)}</div>
+                </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+    
+    // Defer iframe loading with Intersection Observer
+    setTimeout(() => {
+        const container = card.querySelector('.iframe-container');
+        if (container && !container.querySelector('iframe')) {
+            const iframeObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const src = entry.target.dataset.src;
+                        if (src && !entry.target.querySelector('iframe')) {
+                            const placeholder = entry.target.querySelector('.iframe-placeholder');
+                            if (placeholder) {
+                                placeholder.style.display = 'none';
+                            }
+                            const iframe = document.createElement('iframe');
+                            iframe.src = src;
+                            iframe.className = 'absolute inset-0 w-full h-full border-t border-[rgba(255,255,255,0.05)] scaled-iframe';
+                            iframe.style.cssText = 'border: none; pointer-events: none;';
+                            iframe.title = 'App Preview';
+                            iframe.loading = 'lazy';
+                            iframe.scrolling = 'no';
+                            entry.target.appendChild(iframe);
+                        }
+                        iframeObserver.unobserve(entry.target);
+                    }
+                });
+            }, { rootMargin: '500px' });  // Load iframes 500px before they enter viewport
+            
+            iframeObserver.observe(container);
+        }
+    }, 0);
+    
+    return card;
+}
+
+let isLoadingMore = false;
+
+function loadAppsPage() {
+    if (isLoadingMore) return; // Prevent multiple simultaneous loads
+    
+    const featuredContainer = document.getElementById('featuredAppsContainer');
+    const regularContainer = document.getElementById('regularAppsContainer');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const noMoreApps = document.getElementById('noMoreApps');
+    
+    // Early exit if all apps are loaded
+    if (loadedApps.length >= ALL_APPS_LIST.length) {
+        noMoreApps.classList.remove('hidden');
+        loadingIndicator.classList.add('hidden');
+        return;
+    }
+    
+    isLoadingMore = true;
+    
+    // Show loading indicator only if we have more to load
+    if (currentPage > 0 && loadedApps.length < ALL_APPS_LIST.length) {
+        loadingIndicator.classList.remove('hidden');
+    }
+    
+    // No delay - load immediately for smoother experience
+    const loadDelay = 0;
+    setTimeout(() => {
+        if (currentPage === 0) {
+            const featuredCount = Math.min(FEATURED_APPS_COUNT, ALL_APPS_LIST.length);
+            for (let i = 0; i < featuredCount; i++) {
+                const appId = ALL_APPS_LIST[i];
+                if (!loadedApps.includes(appId)) {
+                    const card = createAppCard(appId, true);
+                    featuredContainer.appendChild(card);
+                    loadedApps.push(appId);
+                    RenderState.featuredIds.add(appId);
+                }
+            }
+            currentPage++;
+            
+            if (ALL_APPS_LIST.length <= FEATURED_APPS_COUNT) {
+                document.getElementById('noMoreApps').classList.remove('hidden');
+            }
+        } else {
+            const regularStartIndex = FEATURED_APPS_COUNT + ((currentPage - 1) * REGULAR_APPS_PER_PAGE);
+            const regularEndIndex = Math.min(regularStartIndex + REGULAR_APPS_PER_PAGE, ALL_APPS_LIST.length);
+            
+            for (let i = regularStartIndex; i < regularEndIndex; i++) {
+                const appId = ALL_APPS_LIST[i];
+                if (!loadedApps.includes(appId)) {
+                    const card = createAppCard(appId, false);
+                    regularContainer.appendChild(card);
+                    loadedApps.push(appId);
+                    RenderState.regularIds.add(appId);
+                }
+            }
+            
+            currentPage++;
+            
+            // Update UI state
+            const noMoreApps = document.getElementById('noMoreApps');
+            
+            if (regularEndIndex >= ALL_APPS_LIST.length) {
+                noMoreApps.classList.remove('hidden');
+            }
+        }
+        
+        // Hide loading indicator
+        if (loadingIndicator) {
+            loadingIndicator.classList.add('hidden');
+        }
+        isLoadingMore = false;
+        
+        // Check if we need to load more after this batch
+        if (loadedApps.length < ALL_APPS_LIST.length) {
+            requestAnimationFrame(() => {
+                const scrollPosition = window.pageYOffset + window.innerHeight;
+                const documentHeight = document.documentElement.scrollHeight;
+                
+                // If still near bottom, load more
+                if (documentHeight - scrollPosition < 1500) {
+                    loadMoreApps();
+                }
+            });
+        }
+    }, loadDelay);
+}
+
+// Auto-load more apps when scrolling (no longer needs button click)
+function loadMoreApps() {
+    if (!isLoadingMore && loadedApps.length < ALL_APPS_LIST.length) {
+        loadAppsPage();
+    }
+}
+
+// Setup infinite scroll with IntersectionObserver
+function setupInfiniteScroll() {
+    const sentinel = document.createElement('div');
+    sentinel.id = 'scrollSentinel';
+    sentinel.style.height = '1px';
+    document.getElementById('loadMoreContainer').appendChild(sentinel);
+    
+    // Debounced intersection handler
+    let intersectionTimeout;
+    const handleIntersection = (entries) => {
+        for (const e of entries) {
+            if (e.isIntersecting && loadedApps.length < ALL_APPS_LIST.length && !isLoadingMore) {
+                // Debounce to prevent rapid-fire loading
+                clearTimeout(intersectionTimeout);
+                intersectionTimeout = setTimeout(() => {
+                    if (!isLoadingMore && loadedApps.length < ALL_APPS_LIST.length) {
+                        loadMoreApps();
+                    }
+                }, 100);
+            }
+        }
+    };
+    
+    const io = new IntersectionObserver(handleIntersection, { 
+        rootMargin: '1200px',  // Load when sentinel is 1200px below viewport
+        threshold: 0
+    });
+    io.observe(sentinel);
+
+    // Also add a throttled scroll listener as a backup
+    let lastScrollTime = 0;
+    const scrollThrottle = 150; // Minimum time between scroll checks
+    
+    const handleScroll = () => {
+        const now = Date.now();
+        if (now - lastScrollTime < scrollThrottle) return;
+        
+        lastScrollTime = now;
+        const scrollPosition = window.pageYOffset + window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
+        
+        // Load more when user is within 1500px of the bottom
+        if (documentHeight - scrollPosition < 1500 && loadedApps.length < ALL_APPS_LIST.length && !isLoadingMore) {
+            loadMoreApps();
+        }
+    };
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    // also fill if page is initially short
+    setTimeout(maybeFillViewport, 100);
+}
+
+function maybeFillViewport() {
+    // If after changes the page is short, trigger another page load.
+    const { clientHeight, scrollHeight } = document.documentElement;
+    // Load more content if we're within 1 viewport height of the bottom
+    if (scrollHeight <= clientHeight * 2 && loadedApps.length < ALL_APPS_LIST.length && !isLoadingMore) {
+        loadMoreApps();
+        // Check again after a short delay to ensure we have enough content
+        setTimeout(() => {
+            if (scrollHeight <= clientHeight * 2 && loadedApps.length < ALL_APPS_LIST.length && !isLoadingMore) {
+                loadMoreApps();
+            }
+        }, 500);
+    }
+}
+
+// Polling functions
+function schedulePoll(delay = pollDelay) {
+    clearTimeout(pollTimer);
+    pollTimer = setTimeout(runPollOnce, delay);
+}
+
+async function runPollOnce() {
+    if (pollInFlight || document.hidden) {
+        // try again later when visible / not in flight
+        schedulePoll(pollDelay);
+        return;
+    }
+    pollInFlight = true;
+    if (pollAbort) pollAbort.abort();
+    pollAbort = new AbortController();
+    const signal = pollAbort.signal;
+
+    try {
+        const res = await fetch('/api/apps', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+            },
+            signal,
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        
+        const data = await res.json();
+        const newDict = data.apps || {};
+        const newList = Object.keys(newDict);
+
+        // Optional monotonic guard if server returns a version counter
+        if (typeof data.version === 'number' && data.version <= lastVersion) {
+            // stale response; ignore
+        } else {
+            lastVersion = typeof data.version === 'number' ? data.version : lastVersion;
+            reconcileApps(newList, newDict);
+        }
+
+        // got a good tick: tighten delay a bit (but not too low)
+        pollDelay = Math.max(POLL_MIN_MS, Math.floor(pollDelay * 0.8));
+    } catch (e) {
+        // network/server issue: back off
+        pollDelay = Math.min(POLL_MAX_MS, Math.ceil(pollDelay * 1.5));
+        if (!signal.aborted) {
+            console.error('Polling failed:', e);
+        }
+    } finally {
+        pollInFlight = false;
+        schedulePoll(pollDelay);
+    }
+}
+
+// Reconciliation function
+function reconcileApps(newList, newDict) {
+    // Sort new apps to put featured ones first
+    const featuredIds = newList.filter(id => newDict[id]?.is_featured === true);
+    const nonFeaturedIds = newList.filter(id => newDict[id]?.is_featured !== true);
+    const sortedNewList = [...featuredIds, ...nonFeaturedIds];
+    
+    // Check if we're transitioning from no apps to having apps
+    const wasEmpty = ALL_APPS_LIST.length === 0;
+    const isNowEmpty = sortedNewList.length === 0;
+    
+    // Handle transition from no apps to having apps
+    if (wasEmpty && !isNowEmpty) {
+        // Replace the "no apps" message with the app containers
+        const appsContent = document.getElementById('appsContent');
+        if (appsContent) {
+            appsContent.innerHTML = `
+                <div id="featuredAppsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-8">
+                    <!-- First 6 apps (2 rows of 3) will be loaded here -->
+                </div>
+                <div id="regularAppsContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 md:gap-4 mb-8">
+                    <!-- Remaining apps (6 per row) will be loaded here -->
+                </div>
+                
+                <div id="loadMoreContainer" class="text-center mt-8">
+                    <div id="loadingIndicator" class="hidden mt-4">
+                        <div class="inline-flex items-center px-4 py-2 text-sm text-gray-400">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Loading more apps...
+                        </div>
+                    </div>
+                    <div id="noMoreApps" class="hidden mt-4 text-gray-500 text-sm">
+That's all the apps for now!
+                    </div>
+                </div>
+            `;
+            
+            // Reset page state
+            currentPage = 0;
+            loadedApps = [];
+            RenderState.featuredIds.clear();
+            RenderState.regularIds.clear();
+            
+            // Setup infinite scroll if not already set up
+            setupInfiniteScroll();
+        }
+    }
+    
+    // Handle transition from having apps to no apps
+    if (!wasEmpty && isNowEmpty) {
+        const appsContent = document.getElementById('appsContent');
+        if (appsContent) {
+            appsContent.innerHTML = `
+                <div id="noAppsMessage" class="border border-[rgba(255,255,255,0.05)] rounded-xl p-8 bg-[rgba(255,255,255,0.02)] backdrop-blur-md flex flex-col items-center justify-center h-64">
+                    <h3 class="text-xl font-medium tracking-tight mb-2 gradient-text">No apps yet</h3>
+                    <p class="text-[#8491a5] tracking-tight">Why don't you vibe one up?</p>
+                </div>
+            `;
+        }
+    }
+    
+    // Compute diff
+    const oldSet = new Set(ALL_APPS_LIST);
+    const newSet = new Set(sortedNewList);
+
+    const added = sortedNewList.filter(id => !oldSet.has(id));
+    const removed = ALL_APPS_LIST.filter(id => !newSet.has(id));
+
+    // Update sources first
+    ALL_APPS_LIST = sortedNewList.slice();
+    APPS_MAP = newDict;
+
+    if (removed.length) {
+        removeApps(removed);
+    }
+    
+    // If we just transitioned from empty to having apps, load the first page
+    if (wasEmpty && !isNowEmpty) {
+        loadAppsPage();
+    } else if (added.length) {
+        for (const id of added) {
+            if (!loadedApps.includes(id)) {
+                addNewAppWithAnimation(id);
+            }
+        }
+        
+        if (added.length === 1) {
+            showNotification('A new app just dropped! 🎉');
+        } else if (added.length > 1) {
+            showNotification(`${added.length} new apps just dropped! 🎉`);
+        }
+    }
+
+    // Update counters (fast path; no heavy DOM)
+    updateAppCounter(sortedNewList.length);
+    updateFlipCounter(sortedNewList.length);
+
+    // If the page still needs filling (e.g., first load or after removals), let infinite scroll top it up.
+    if (!isNowEmpty) {
+        maybeFillViewport();
+    }
+}
+
+function removeApps(ids) {
+    const featured = document.getElementById('featuredAppsContainer');
+    const regular = document.getElementById('regularAppsContainer');
+
+    for (const id of ids) {
+        const anchor = document.querySelector(`a[href="/app/${id}"]`);
+        if (anchor) {
+            anchor.style.transition = 'opacity 0.24s ease, transform 0.24s ease';
+            anchor.style.opacity = '0';
+            anchor.style.transform = 'scale(0.96)';
+            setTimeout(() => anchor.remove(), 240);
+        }
+        RenderState.featuredIds.delete(id);
+        RenderState.regularIds.delete(id);
+        const idx = loadedApps.indexOf(id);
+        if (idx >= 0) loadedApps.splice(idx, 1);
+    }
+}
+
+// This function is now replaced by removeApps() in reconcileApps
+
+// Add new app with smooth animation
+function addNewAppWithAnimation(appId) {
+    const featuredContainer = document.getElementById('featuredAppsContainer');
+    const regularContainer = document.getElementById('regularAppsContainer');
+    
+    if (!featuredContainer) return;
+    
+    // Always add new apps as featured, pushing older ones down
+    const card = createAppCard(appId, true);
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(-20px) scale(0.95)';
+    
+    // Add shimmer effect to new app
+    const divElement = card.querySelector('div');
+    if (divElement) {
+        divElement.classList.add('shimmer');
+    }
+    
+    // Insert at the beginning of featured apps
+    featuredContainer.insertBefore(card, featuredContainer.firstChild);
+    RenderState.featuredIds.add(appId);
+    
+    // If we exceed 6 featured apps, move the last one to regular
+    if (featuredContainer.children.length > FEATURED_APPS_COUNT) {
+        const lastFeatured = featuredContainer.lastElementChild;
+        
+        // Reuse the existing node - just change its classes
+        if (regularContainer && lastFeatured) {
+            const appHref = lastFeatured.getAttribute('href');
+            const appIdToMove = appHref.split('/').pop();
+            
+            // Update the card's container classes
+            const containerDiv = lastFeatured.querySelector('div');
+            if (containerDiv) {
+                containerDiv.className = "border border-[rgba(255,255,255,0.05)] rounded-xl p-2 bg-[rgba(255,255,255,0.02)] backdrop-blur-md";
+            }
+            
+            // Move to regular container
+            regularContainer.insertBefore(lastFeatured, regularContainer.firstChild);
+            RenderState.featuredIds.delete(appIdToMove);
+            RenderState.regularIds.add(appIdToMove);
+        }
+    }
+    
+    // Track the new app
+    if (!loadedApps.includes(appId)) {
+        loadedApps.unshift(appId);
+    }
+    
+    // Force a reflow to ensure initial styles are applied
+    card.offsetHeight;
+    
+    // Animate in with a slight delay for effect
+    requestAnimationFrame(() => {
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0) scale(1)';
+            
+            // Remove shimmer after animation
+            setTimeout(() => {
+                const divElement = card.querySelector('div');
+                if (divElement) {
+                    divElement.classList.remove('shimmer');
+                }
+            }, 1500);
+        }, 100);
+    });
+}
+
+// Update the app counter in the bottom banner
+function updateAppCounter(count) {
+    // Update the flip counter
+    updateFlipCounter(count);
+    
+    // Use the ID selector for reliability
+    const counterElement = document.getElementById('appCounter');
+    if (counterElement) {
+        // Animate the number change
+        const currentCount = parseInt(counterElement.textContent || '0', 10) || 0;
+        if (currentCount !== count) {
+            counterElement.style.transition = 'transform 0.3s ease-out';
+            counterElement.style.transform = 'scale(1.2)';
+            counterElement.textContent = count;
+            setTimeout(() => {
+                counterElement.style.transform = 'scale(1)';
+            }, 300);
+        }
+    }
+}
+
+// Show a subtle notification for new apps
+function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'fixed top-4 right-2 left-2 sm:left-auto sm:right-4 max-w-sm mx-auto sm:mx-0 bg-gradient-to-r from-green-500 to-green-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg shadow-lg z-50 transform translate-x-full sm:translate-x-full transition-transform duration-300 text-sm sm:text-base';
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // Force a reflow to ensure the initial transform is applied
+    notification.offsetHeight;
+    
+    // Slide in
+    requestAnimationFrame(() => {
+        notification.style.transform = 'translateX(0)';
+    });
+    
+    // Slide out and remove after 3 seconds
+    setTimeout(() => {
+        notification.style.transform = 'translateX(110%)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                document.body.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+function updateLiveIndicator(isActive) {
+    const indicator = document.getElementById('liveIndicator');
+    if (indicator) {
+        const dot = indicator.querySelector('.bg-\\[\\#00f10f\\]');
+        const text = indicator.querySelector('span');
+        
+        if (isActive) {
+            dot.classList.add('animate-pulse');
+            text.textContent = 'LIVE';
+            indicator.style.opacity = '1';
+        } else {
+            dot.classList.remove('animate-pulse');
+            text.textContent = 'PAUSED';
+            indicator.style.opacity = '0.5';
+        }
+    }
+}
+
+// Removed sticky header behavior - keeping it simple
+
+// Initialize with first page of apps
+document.addEventListener('DOMContentLoaded', () => {
+    // Initialize flip counter with current app count
+    updateFlipCounter(ALL_APPS_LIST.length);
+    
+    if (ALL_APPS_LIST.length > 0) {
+        loadAppsPage();
+        
+        // Always enable infinite scroll if there are apps
+        setupInfiniteScroll();
+        
+        // Hide the entire load more container if all apps fit in featured section
+        if (ALL_APPS_LIST.length <= FEATURED_APPS_COUNT) {
+            document.getElementById('loadMoreContainer').style.display = 'none';
+        }
+    }
+    
+    // Start adaptive polling (for both empty and non-empty cases)
+    schedulePoll(POLL_MIN_MS);
+    
+    // Visibility-aware polling
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            clearTimeout(pollTimer);
+            if (pollAbort) pollAbort.abort();
+            updateLiveIndicator(false);
+        } else {
+            updateLiveIndicator(true);
+            schedulePoll(POLL_MIN_MS);
+        }
+    });
+    
+    // Handle input and button state
+    const promptInput = document.getElementById('appPrompt');
+    const createAppBtn = document.getElementById('createAppBtn');
+    
+    // Enable/disable button based on input
+    promptInput.addEventListener('input', (event) => {
+        const hasValue = event.target.value.trim().length > 0;
+        createAppBtn.disabled = !hasValue;
+    });
+    
+    // Add Enter key handler for the app prompt input
+    promptInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            // Only create app if input has value
+            if (event.target.value.trim().length > 0) {
+                createApp();
+            }
+        }
+    });
+});
+
+// Clean up when page is unloaded
+window.addEventListener('beforeunload', () => {
+    clearTimeout(pollTimer);
+    if (pollAbort) pollAbort.abort();
+});
+
 async function createApp() {
     const button = document.getElementById('createAppBtn');
     const spinner = document.getElementById('spinner');
     const createAppDiv = document.getElementById('createAppDiv');
     const promptInput = document.getElementById('appPrompt');
-    const prompt = promptInput.value.trim() || "A simple hello world landing page";
+    const prompt = promptInput.value.trim();
+    
+    if (prompt === '') {
+        button.disabled = true;
+        return;
+    }
     
     createAppDiv.classList.add('shimmer');
     promptInput.disabled = true;
@@ -162,8 +1274,8 @@ async function createApp() {
         });
         
         if (!response.ok) {
-            const data = await response.json().catch(() => ({ error: 'Failed to create app' }));
-            throw new Error(data.error || 'Failed to create app');
+            const data = await response.json().catch((e) => ({ error: `Failed to create app: ${e}` }));
+            throw new Error(data.error || `Failed to create app, status: ${response.status}`);
         }
         
         const data = await response.json();

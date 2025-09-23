@@ -3,7 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}{% endblock %}</title>
+    <title>{% block title %}Modal Vibe - Create Apps by Chatting with AI{% endblock %}</title>
+    <meta name="description" content="{% block description %}With Modal Sandboxes, you can build an AI coding platform that scales to over 1M monthly users.{% endblock %}">
+    
+    <!-- OpenGraph / Facebook Meta Tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{% block og_url %}https://vibes.modal.chat/{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}Modal Vibe - Create Apps by Chatting with AI{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}With Modal Sandboxes, you can build an AI coding platform that scales to over 1M monthly users.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}https://modal-cdn.com/cdnbot/modal-vibe4w8pt7wm_a5e506f6.webp{% endblock %}">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta property="twitter:domain" content="vibes.modal.chat">
+    <meta property="twitter:url" content="{% block twitter_url %}https://vibes.modal.chat/{% endblock %}">
+    <meta name="twitter:title" content="{% block twitter_title %}Modal Vibe - Create Apps by Chatting with AI{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}With Modal Sandboxes, you can build an AI coding platform that scales to over 1M monthly users.{% endblock %}">
+    <meta name="twitter:image" content="{% block twitter_image %}https://modal-cdn.com/cdnbot/modal-vibe-xkmyigxm7_2130731d.webp{% endblock %}">
+    
     <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
     <link href="https://api.fontshare.com/v2/css?f[]=degular-display@400,700,500,600&display=swap" rel="stylesheet">
@@ -20,8 +37,8 @@
         }
     </script>
     <link href="/static/css/style.css" rel="stylesheet">
-    <link href="/static/css/bouncing-logo.css" rel="stylesheet">
     <link href="/static/css/toast.css" rel="stylesheet">
+    <link href="/static/css/bouncing-logo.css" rel="stylesheet">
     <style>
         :root {
             --modal-bg: #000;
@@ -46,9 +63,6 @@
 
 </head>
 <body class="min-h-screen">
-    <div class="bouncing-logo-container">
-        <img id="bouncing-logo" src="/static/logo.svg" alt="Bouncing Logo" />
-    </div>
     <nav class="border-b border-gray-800/40">
         <div class="container mx-auto px-4 pt-4">
             <div class="flex justify-between items-center py-4 pl-4 bg-white/10 rounded-xl">
@@ -66,12 +80,16 @@
         </div>
     </nav>
 
+    <div class="bouncing-logo-container">
+        <img id="bouncing-logo" src="/static/logo.svg" alt="Bouncing logo" />
+    </div>
+
     <div class="container mx-auto px-4 mt-8">
         {% block content %}{% endblock %}
     </div>
 
     {% block scripts %}{% endblock %}
-    <script src="/static/js/bouncing-logo.js"></script>
     <script src="/static/js/toast.js"></script>
+    <script src="/static/js/bouncing-logo.js"></script>
 </body>
 </html> 

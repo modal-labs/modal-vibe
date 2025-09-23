@@ -33,6 +33,16 @@ modal deploy -m main
 
 ### Local Development
 
+Load test
+```bash
+MODAL_PROFILE=modal-labs modal run main.py::create_app_loadtest_function --num-apps 10
+```
+
+Admin delete sandbox
+```bash
+MODAL_PROFILE=modal-labs modal run main.py::delete_sandbox_admin_function --app-id <APP_ID>
+```
+
 Run an example sandbox HTTP server:
 ```bash
 python -m sandbox.server

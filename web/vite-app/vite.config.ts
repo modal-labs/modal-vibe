@@ -6,6 +6,9 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({
   server: {
     allowedHosts: ['.modal.host'],
+    headers: {
+      'X-Frame-Options': 'ALLOWALL',
+    },
   },
   plugins: [react(), tailwindcss()],
 })
