@@ -1,9 +1,10 @@
 """Main entrypoint that runs the FastAPI controller that serves the web app and manages the sandbox apps."""
 
 import os
+from datetime import datetime
 
 from core.llm import get_llm_client
-from core.models import AppDirectory, SandboxApp
+from core.sandbox import AppDirectory, SandboxApp
 import modal
 from dotenv import load_dotenv
 from modal import Dict
@@ -118,6 +119,11 @@ def fastapi_app():
     class TerminateAppRequest(BaseModel):
         admin_secret: str
     
+    class ToggleFeatureRequest(BaseModel):
+        admin_secret: str
+
+    class SnapshotAppRequest(BaseModel):
+        admin_secret: str
         
 
     web_app = FastAPI(
@@ -165,7 +171,11 @@ def fastapi_app():
         count = 0
         for app_id, app_metadata in app_directory.apps.items():
             count += 1
-            apps_dict[app_id] = app_metadata.sandbox_user_tunnel_url
+            apps_dict[app_id] = {
+                "url": app_metadata.sandbox_user_tunnel_url,
+                "title": app_metadata.title if hasattr(app_metadata, 'title') else "",
+                "is_featured": app_metadata.is_featured if hasattr(app_metadata, 'is_featured') else False
+            }
         return apps_dict
         
 
@@ -180,6 +190,8 @@ def fastapi_app():
                 "app_url": app.data.sandbox_user_tunnel_url,
                 "relay_url": app.data.sandbox_tunnel_url,
                 "message_history": app.data.message_history,
+                "app_title": app.metadata.title if hasattr(app.metadata, 'title') else "",
+                "is_featured": app.metadata.is_featured if hasattr(app.metadata, 'is_featured') else False,
             },
         )
 
@@ -292,6 +304,42 @@ def fastapi_app():
         except Exception as e:
             print(f"Error terminating sandbox {app_id}: {str(e)}")
             return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
+    
+    @web_app.post("/api/app/{app_id}/snapshot")
+    async def snapshot_app(app_id: str, request_data: SnapshotAppRequest):
+        """Snapshot an app with admin authentication"""
+        admin_secret = os.environ.get("ADMIN_SECRET", "")
+        if not admin_secret or request_data.admin_secret != admin_secret:
+            raise HTTPException(status_code=403, detail="Invalid admin secret")
+        
+        app = _get_app_or_raise(app_id)
+        sandbox = modal.Sandbox.from_object_id(app.data.sandbox_object_id)
+        image = sandbox.snapshot_filesystem()
+        return JSONResponse({"status": "success", "image": image.object_id}, status_code=200)
+
+    @web_app.post("/api/app/{app_id}/toggle-feature")
+    async def toggle_feature_app(app_id: str, request_data: ToggleFeatureRequest):
+        """Toggle featured status for an app with admin authentication"""
+        admin_secret = os.environ.get("ADMIN_SECRET", "")
+        if not admin_secret or request_data.admin_secret != admin_secret:
+            raise HTTPException(status_code=403, detail="Invalid admin secret")
+        
+        app = _get_app_or_raise(app_id)
+        
+        try:
+            app.metadata.is_featured = not getattr(app.metadata, 'is_featured', False)
+            app.metadata.updated_at = datetime.now()
+            
+            app_directory.set_app(app)
+            
+            return JSONResponse({
+                "status": "success", 
+                "is_featured": app.metadata.is_featured,
+                "message": f"App {app_id} is now {'featured' if app.metadata.is_featured else 'not featured'}"
+            })
+        except Exception as e:
+            print(f"Error toggling feature status for {app_id}: {str(e)}")
+            return JSONResponse({"status": "error", "message": str(e)}, status_code=500)
 
     @web_app.post("/api/admin/terminate-all")
     async def terminate_all_sandboxes(request_data: TerminateAppRequest):
@@ -340,30 +388,6 @@ def fastapi_app():
 
     return web_app
 
-
-@app.function(
-    image=image,
-    secrets=[modal.Secret.from_name("anthropic-secret")],
-    timeout=3600,
-)
-@modal.concurrent(max_inputs=1000)
-async def make_create_app_request(prompt: str):
-    import httpx
-
-    API_URL = "https://modal-labs-joy-dev--modal-vibe-fastapi-app.modal.run"
-    num_retries = 5
-    for i in range(num_retries):
-        try:
-            async with httpx.AsyncClient(timeout=300.0) as client:
-                response = await client.post(f"{API_URL}/api/create", json={"prompt": prompt})
-                response.raise_for_status()
-                result = response.json()
-                app_id = result["app_id"]
-                return app_id
-        except Exception as e:
-            continue
-    raise Exception(f"Failed to create app after {num_retries} retries")
-
 @app.function(schedule=modal.Period(minutes=1))
 async def clean_up_dead_apps():
     import httpx
@@ -376,74 +400,3 @@ async def clean_up_dead_apps():
     timeout = httpx.Timeout(timeout=30.0, connect=10.0, read=10.0)
     async with httpx.AsyncClient(limits=limits, timeout=timeout) as client:
         await app_directory.cleanup(client)
-
-@app.function(
-    image=core_image,
-    secrets=[modal.Secret.from_name("anthropic-secret")],
-    timeout=3600,
-)
-@modal.concurrent(max_inputs=1000)
-async def create_app_loadtest_function(num_apps: int = 100):
-    import time
-    import asyncio
-    from typing import Any
-
-    start_time = time.time()
-
-    requested_num = num_apps
-    app_buffers = 30
-    effective_num = requested_num + app_buffers
-
-    API_URL = "https://modal-labs-joy-dev--modal-vibe-fastapi-app.modal.run"
-    if not API_URL:
-        raise ValueError("API_URL environment variable is not set")
-
-    with open("/root/core/prompts.txt", "r") as f:
-        prompts = [p.strip() for p in f if p.strip()]
-    prompts = prompts[:effective_num]
-
-    semaphore = asyncio.Semaphore(120)
-
-    async def create_app_with_limit(prompt: str, index: int) -> Any | None:
-        print(f"Creating app with prompt: {prompt}")
-        async with semaphore:
-            delays = [0, 0.1, 0.5]  # seconds
-            for attempt, delay in enumerate([0, *delays], start=1):
-                if delay:
-                    await asyncio.sleep(delay)
-                try:
-                    return await asyncio.wait_for(
-                        make_create_app_request.remote.aio(prompt),
-                        timeout=30,
-                    )
-                except asyncio.TimeoutError:
-                    if attempt == len(delays) + 1:
-                        print(f"[{index}] timeout on prompt")
-                except Exception as e:
-                    if attempt == len(delays) + 1:
-                        print(f"[{index}] failed: {e!r}")
-            return None
-
-    tasks = [asyncio.create_task(create_app_with_limit(p, i)) for i, p in enumerate(prompts)]
-    results = await asyncio.gather(*tasks)  # no return_exceptions
-
-    successful_apps = [r for r in results if r is not None]
-    app_count = len(successful_apps)
-
-    app_directory = AppDirectory(apps_dict, app, llm_client)
-    try:
-        await asyncio.to_thread(app_directory.load)
-    except Exception:
-        app_directory.load()
-    actual_app_count = len(app_directory.apps)
-
-    time_taken = time.time() - start_time
-    msg = f"✅ Created {app_count}/{len(prompts)} apps ({actual_app_count} in directory) in {time_taken:.2f}s"
-    print(msg)
-    return {
-        "requested": requested_num,
-        "effective": len(prompts),
-        "created": app_count,
-        "directory_count": actual_app_count,
-        "duration_sec": time_taken,
-    }

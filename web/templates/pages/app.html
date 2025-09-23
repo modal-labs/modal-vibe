@@ -4,34 +4,72 @@
 
 {% block head %}
 <style>
-  /* You can add any small custom tweaks here */
+  /* Mobile-specific styles */
+  @media (max-width: 1023px) {
+    #messageHistoryContainer {
+      max-height: 0 !important;
+      overflow: hidden !important;
+    }
+    
+    #messageHistoryContainer.expanded {
+      max-height: 100px !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+    }
+    
+    /* Make the chat section sticky at bottom on mobile */
+    .flex-col-reverse > div:first-child {
+      position: sticky;
+      bottom: 0;
+      z-index: 10;
+    }
+  }
+  
+  /* Smooth transitions */
+  #messageHistoryContainer {
+    transition: max-height 0.3s ease-in-out, overflow 0.3s ease-in-out;
+  }
+  
+  #toggleIcon {
+    transition: transform 0.3s ease;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="flex flex-col lg:flex-row gap-4 sm:gap-6 py-4 sm:p-6 h-[calc(100vh-120px)]">
+<div class="flex flex-col-reverse lg:flex-row gap-4 sm:gap-6 py-4 sm:p-6 h-[calc(100vh-120px)]">
 
-  <!-- Left side: Message History -->
+  <!-- Chat Section (Bottom on mobile, Left on desktop) -->
   <div class="w-full lg:w-96 lg:flex-shrink-0">
-    <div class="bg-white/10 shadow-2xl rounded-xl overflow-hidden h-full flex flex-col border border-white/10">
-      <div class="px-4 sm:px-6 py-4 border-b border-white/10">
-        <h2 class="text-xl sm:text-2xl font-semibold text-white">Message History</h2>
+    <div class="bg-white/10 shadow-2xl rounded-xl overflow-hidden h-auto lg:h-full flex flex-col border border-white/10">
+      <div class="px-4 sm:px-6 py-3 lg:py-4 border-b border-white/10 flex justify-between items-center lg:block">
+        <h2 class="text-lg lg:text-xl font-semibold text-white">Message History</h2>
+        <button 
+          id="toggleHistory"
+          class="lg:hidden text-white/60 hover:text-white transition-colors p-1"
+          onclick="toggleMessageHistory()"
+        >
+          <svg id="toggleIcon" class="w-5 h-5 transform rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </button>
       </div>
       
-      <div class="flex-1 overflow-y-auto p-4">
+      <div id="messageHistoryContainer" class="max-h-0 lg:max-h-none lg:flex-1 overflow-hidden lg:overflow-y-auto transition-all duration-300 ease-in-out">
+        <div class="p-4">
         {% if message_history %}
           <div class="space-y-3">
             {% for message in message_history %}
               {% if message.type.value == "user" %}
                 <div class="flex justify-end">
-                  <div class="bg-green-700 rounded-lg p-4 border border-white/10">
-                    <p class="text-sm text-white leading-relaxed">{{ message.content }}</p>
+                  <div class="bg-green-700 rounded-lg p-4 border border-white/10 max-w-[85%] break-words">
+                    <p class="text-sm text-white leading-relaxed whitespace-pre-wrap break-words">{{ message.content }}</p>
                   </div>
                 </div>
               {% else %}
                 <div class="flex">
-                  <div class="bg-white/10 rounded-lg p-4 border border-white/10 justify-end">
-                  <p class="text-sm text-white">{{ message.content }}</p>
+                  <div class="bg-white/10 rounded-lg p-4 border border-white/10 max-w-[85%] break-words">
+                  <p class="text-sm text-white whitespace-pre-wrap break-words">{{ message.content }}</p>
                   </div>
                 </div>
               {% endif %}
@@ -48,10 +86,10 @@
             </div>
           </div>
         {% endif %}
+        </div>
       </div>
 
-
-    <form id="editForm" class="flex flex-col p-4 sm:p-6">
+    <form id="editForm" class="flex flex-col p-4 sm:p-6 border-t border-white/10 lg:border-t-0">
         <textarea
           id="textInput"
           rows="2"
@@ -81,13 +119,19 @@
 
   </div>
 
-  <div class="flex-1 min-h-[400px] sm:min-h-[600px] lg:h-full">
+  <!-- Preview Section (Top on mobile, Right on desktop) -->
+  <div class="flex-1 min-h-[300px] sm:min-h-[400px] lg:min-h-0 lg:h-full">
     <div class="bg-white/10 shadow-2xl rounded-xl h-full border border-white/10 flex flex-col">
       <div class="flex justify-between items-center px-4 sm:px-6 py-4 border-b border-white/10">
         <div>
-          <h2 class="text-xl sm:text-2xl font-semibold text-white">Live Preview</h2>
+          <h2 class="text-xl sm:text-2xl font-semibold text-white flex items-center gap-2 min-w-0">
+            <span class="flex-shrink-0">Live Preview</span>
+            {% if app_title %}
+            <span class="text-gray-400 font-normal truncate max-w-xs sm:max-w-sm lg:max-w-md" title="{{ app_title }}">{{ app_title }}</span>
+            {% endif %}
+          </h2>
           <p class="text-sm text-gray-400 flex items-center gap-2">
-            Live URL: <a href="{{ app_url }}" class="text-white hover:text-gray-300">{{ app_url }}</a>
+            Live URL: <a href="{{ app_url }}" class="text-white hover:text-gray-300 max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap">{{ app_url }}</a>
             <button onclick="copyToClipboard('{{ app_url }}', event)" class="text-gray-400 hover:text-white transition-colors" title="Copy URL">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
@@ -95,16 +139,29 @@
             </button>
           </p>
         </div>
-        <div class="flex items-center gap-4">
-          <p id="statusDisplay" class="text-sm text-gray-400"></p>
-          <button
-            id="terminateButton"
-            class="bg-transparent hover:bg-white/10 text-white text-sm font-medium py-2 px-3 rounded-lg transition-colors duration-200 border border-white hover:border-white/80"
-            onclick="showTerminateModal()"
-          >
-            🗑️
-          </button>
-        </div>
+          <div class="flex items-center gap-2">
+            <p id="statusDisplay" class="text-sm text-gray-400 mr-2"></p>
+            <button
+              id="terminateButton"
+              class="p-1 hover:bg-white/10 rounded transition-colors"
+              onclick="showTerminateModal()"
+              title="Terminate sandbox (admin only)"
+            >
+              <svg class="w-5 h-5 text-gray-400 hover:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+              </svg>
+            </button>
+            <button 
+              id="featureToggle" 
+              onclick="toggleFeature()"
+              class="p-1 hover:bg-white/10 rounded transition-colors"
+              title="Toggle featured status (admin only)"
+            >
+              <svg class="w-5 h-5 {% if is_featured %}text-yellow-400 fill-yellow-400{% else %}text-gray-400{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+              </svg>
+            </button>
+          </div>
       </div>
       <div class="flex-1 relative">
         <!-- Lightweight loading indicator -->
@@ -128,6 +185,46 @@
 
 </div>
 
+<!-- Feature Toggle Modal -->
+<div id="featureModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+  <div class="bg-gray-800 rounded-lg p-6 w-96 border border-white/10">
+    <h3 class="text-xl font-semibold text-white mb-4">⭐ Toggle Featured Status</h3>
+    <p class="text-gray-300 mb-4">
+      Mark this app as featured to prioritize it in the gallery.
+    </p>
+    <div class="mb-4">
+      <label for="featureAdminSecretInput" class="block text-sm font-medium text-gray-300 mb-2">
+        Admin Secret:
+      </label>
+      <input
+        type="password"
+        id="featureAdminSecretInput"
+        class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500"
+        placeholder="Enter admin secret"
+      />
+    </div>
+    <div class="flex gap-3 justify-end">
+      <button
+        onclick="hideFeatureModal()"
+        class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors duration-200"
+      >
+        Cancel
+      </button>
+      <button
+        onclick="confirmToggleFeature()"
+        id="confirmFeatureButton"
+        class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <span id="featureButtonText">Toggle Feature</span>
+        <svg class="w-4 h-4 inline-block ml-2 hidden animate-spin" id="featureSpinner" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Terminate Modal -->
 <div id="terminateModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
   <div class="bg-gray-800 rounded-lg p-6 w-96 border border-white/10">
     <h3 class="text-xl font-semibold text-white mb-4">🚨 Terminate Sandbox</h3>
@@ -172,6 +269,99 @@
 <script>
 const APP_ID = '{{ app_id }}';
 const PROMPT = '{{ prompt }}';
+let IS_FEATURED = '{{ is_featured|lower }}' === 'true';
+
+function toggleFeature() {
+    showFeatureModal();
+}
+
+function showFeatureModal() {
+    const modal = document.getElementById('featureModal');
+    const input = document.getElementById('featureAdminSecretInput');
+    modal.classList.remove('hidden');
+    setTimeout(() => input.focus(), 100);
+}
+
+function hideFeatureModal() {
+    const modal = document.getElementById('featureModal');
+    const input = document.getElementById('featureAdminSecretInput');
+    modal.classList.add('hidden');
+    input.value = '';
+}
+
+function setFeatureLoading(isLoading) {
+    const button = document.getElementById('confirmFeatureButton');
+    const spinner = document.getElementById('featureSpinner');
+    const buttonText = document.getElementById('featureButtonText');
+    
+    button.disabled = isLoading;
+    spinner.classList.toggle('hidden', !isLoading);
+    buttonText.textContent = isLoading ? 'Updating...' : 'Toggle Feature';
+}
+
+async function confirmToggleFeature() {
+    const adminSecret = document.getElementById('featureAdminSecretInput').value.trim();
+    
+    if (!adminSecret) {
+        window.toast.show('Please enter the admin secret');
+        return;
+    }
+    
+    try {
+        setFeatureLoading(true);
+        const res = await fetch(`/api/app/${APP_ID}/toggle-feature`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ admin_secret: adminSecret })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok && data.status === 'success') {
+            IS_FEATURED = data.is_featured;
+            const starIcon = document.querySelector('#featureToggle svg');
+            if (IS_FEATURED) {
+                starIcon.classList.remove('text-gray-400');
+                starIcon.classList.add('text-yellow-400', 'fill-yellow-400');
+            } else {
+                starIcon.classList.remove('text-yellow-400', 'fill-yellow-400');
+                starIcon.classList.add('text-gray-400');
+            }
+            window.toast.show(data.message || 'Feature status updated', 'success');
+            hideFeatureModal();
+        } else {
+            let errorMessage = data.detail || data.error || data.message || 'Failed to toggle feature status';
+            if (res.status === 403) {
+                errorMessage = 'Invalid admin secret';
+            }
+            window.toast.show(errorMessage);
+        }
+    } catch (err) {
+        console.error('Failed to toggle feature:', err);
+        window.toast.show('Error toggling feature status');
+    } finally {
+        setFeatureLoading(false);
+    }
+}
+
+// Toggle message history on mobile
+let isHistoryExpanded = false;
+function toggleMessageHistory() {
+    const container = document.getElementById('messageHistoryContainer');
+    const toggleIcon = document.getElementById('toggleIcon');
+    
+    isHistoryExpanded = !isHistoryExpanded;
+    
+    if (isHistoryExpanded) {
+        container.classList.add('expanded');
+        toggleIcon.classList.remove('rotate-180');
+    } else {
+        container.classList.remove('expanded');
+        toggleIcon.classList.add('rotate-180');
+    }
+}
 
 function copyToClipboard(text, event) {
     navigator.clipboard.writeText(text).then(() => {
@@ -218,7 +408,7 @@ async function updateMessageHistory() {
 }
 
 function renderMessageHistory(messages) {
-    const historyContainer = document.querySelector('.flex-1.overflow-y-auto.p-4');
+    const historyContainer = document.querySelector('#messageHistoryContainer > div');
     if (!historyContainer) return;
     
     if (messages && messages.length > 0) {
@@ -228,16 +418,16 @@ function renderMessageHistory(messages) {
                     if (message.type === "user") {
                         return `
                             <div class="flex justify-end">
-                                <div class="bg-green-700 rounded-lg p-4 border border-white/10">
-                                    <p class="text-sm text-white leading-relaxed">${escapeHtml(message.content)}</p>
+                                <div class="bg-green-700 rounded-lg p-4 border border-white/10 max-w-[85%] break-words">
+                                    <p class="text-sm text-white leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(message.content)}</p>
                                 </div>
                             </div>
                         `;
                     } else {
                         return `
                             <div class="flex">
-                                <div class="bg-white/10 rounded-lg p-4 border border-white/10">
-                                    <p class="text-sm text-white">${escapeHtml(message.content)}</p>
+                                <div class="bg-white/10 rounded-lg p-4 border border-white/10 max-w-[85%] break-words">
+                                    <p class="text-sm text-white whitespace-pre-wrap break-words">${escapeHtml(message.content)}</p>
                                 </div>
                             </div>
                         `;
@@ -337,15 +527,15 @@ function updateStatusDisplay(status) {
   let colorClass = '';
   switch (status) {
     case 'active':
-      text = 'Sandbox Status: Active \u{1F7E2}';
+      text = 'Active \u{1F7E2}';
       colorClass = 'text-green-400';
       break;
     case 'ready':
-      text = 'Sandbox Status: Ready \u{1F535}';
+      text = 'Ready \u{1F535}';
       colorClass = 'text-blue-400';
       break;
     default:
-      text = 'Sandbox Status: Offline \u{1F534}';
+      text = 'Offline \u{1F534}';
       colorClass = 'text-red-400';
       break;
   }
@@ -464,6 +654,20 @@ document.getElementById('adminSecretInput').addEventListener('keydown', function
 document.getElementById('terminateModal').addEventListener('click', function(e) {
   if (e.target === this) {
     hideTerminateModal();
+  }
+});
+
+// Feature modal event listeners
+document.getElementById('featureAdminSecretInput').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    confirmToggleFeature();
+  }
+});
+
+document.getElementById('featureModal').addEventListener('click', function(e) {
+  if (e.target === this) {
+    hideFeatureModal();
   }
 });
 </script>
