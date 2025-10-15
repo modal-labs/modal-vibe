@@ -1,31 +1,47 @@
-# Modal Vibe
-![Home Page](./public/homepage.png)
+# Modal Vibe: A scalable AI coding platform
 
-Example application that lets users programmatically create Sandboxed applications that service React through a UI.
+<center>
+<video controls playsinline class="w-full aspect-[16/9]" poster="https://modal-cdn.com/blog/videos/modal-vibe-scaleup-poster.png">
+<source src="https://modal-cdn.com/blog/videos/modal-vibe-scaleup.mp4" type="video/mp4">
+</video>
+</center>
 
-Each application lives on a Modal Sandbox and contains a webserver accessible through Modal Tunnels.
+The [Modal Vibe repo](https://github.com/modal-labs/modal-vibe) demonstrates how you can build
+a scalable AI coding platform on Modal.
 
+Users of the application can prompt an LLM to create sandboxed applications that service React through a UI.
 
-## Structure
-![Architecture Diagram](./public/architecture.png)
+Each application lives on a [Modal Sandbox](https://modal.com/docs/guide/sandbox)
+and contains a webserver accessible through
+[Modal Tunnels](https://modal.com/docs/guide/tunnels).
+
+For a high-level overview of Modal Vibe, including performance numbers and why they matter, see
+[the accompanying blog post](https://modal.com/blog/modal-vibe).
+For details on the implementation, read on.
+
+## How it's structured
+
+![Architecture diagram for Modal Vibe](https://modal-cdn.com/modal-vibe/architecture.png)
 
 - `main.py` is the entrypoint that runs the FastAPI controller that serves the web app and manages the sandbox apps.
 - `core` contains the logic for `SandboxApp` model and LLM logic.
 - `sandbox` contains a small HTTP server that gets put inside every Sandbox that's created, as well as some sandbox lifecycle management code.
 - `web` contains the Modal Vibe website that users see and interact with, as well as the api server that manages Sandboxes.
 
-
 ## How to run
-Set-up the local environment.
+
+First, set up the local environment:
 
 ```bash
 python3 -m venv venv && source venv/bin/activate && pip install -r requirements.dev.txt
 ```
 
 ### Deploy
-To deploy to Modal, copy the `.env.example` and add your `ANTHROPIC_API_KEY`. Also, create a Modal Secret called `anthropic-secret` so our applications can access it.
 
-Then, run the following code block:
+To deploy to Modal, copy `.env.example` to a file called `.env` and add your `ANTHROPIC_API_KEY`.
+Also, create a [Modal Secret](https://modal.com/docs/guide/secrets) called `anthropic-secret` so our applications can access it.
+
+Then, deploy the application with Modal:
 
 ```bash
 modal deploy -m main
@@ -33,19 +49,20 @@ modal deploy -m main
 
 ### Local Development
 
-Load test
+Run a load test:
+
 ```bash
-MODAL_PROFILE=modal-labs modal run main.py::create_app_loadtest_function --num-apps 10
+modal run main.py::create_app_loadtest_function --num-apps 10
 ```
 
-Admin delete sandbox
+Delete a sandbox:
+
 ```bash
-MODAL_PROFILE=modal-labs modal run main.py::delete_sandbox_admin_function --app-id <APP_ID>
+modal run main.py::delete_sandbox_admin_function --app-id <APP_ID>
 ```
 
 Run an example sandbox HTTP server:
+
 ```bash
 python -m sandbox.server
 ```
-
-
