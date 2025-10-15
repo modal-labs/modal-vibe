@@ -28,7 +28,6 @@ For details on the implementation, read on.
 - `sandbox` contains a small HTTP server that gets put inside every Sandbox that's created, as well as some sandbox lifecycle management code.
 - `web` contains the Modal Vibe website that users see and interact with, as well as the api server that manages Sandboxes.
 
-
 ## How to run
 
 First, set up the local environment:
@@ -51,16 +50,19 @@ modal deploy -m main
 ### Local Development
 
 Run a load test:
+
 ```bash
 modal run main.py::create_app_loadtest_function --num-apps 10
 ```
 
 Delete a sandbox:
+
 ```bash
 modal run main.py::delete_sandbox_admin_function --app-id <APP_ID>
 ```
 
 Run an example sandbox HTTP server:
+
 ```bash
 python -m sandbox.server
 ```
