@@ -33,8 +33,3 @@ async def run_sandbox_server_with_tunnel(app: modal.App, image: modal.Image):
 
     print("Sandbox server with tunnel running")
     return main_tunnel.url, user_tunnel.url, sb.object_id
-
-if __name__ == "__main__":
-    app = modal.App("modal-vibe-sandbox-server")
-    with modal.enable_output():
-        run_sandbox_server_with_tunnel.remote(app)
