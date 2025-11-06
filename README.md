@@ -3,6 +3,7 @@
 <center>
 <video controls playsinline class="w-full aspect-[16/9]" poster="https://modal-cdn.com/blog/videos/modal-vibe-scaleup-poster.png">
 <source src="https://modal-cdn.com/blog/videos/modal-vibe-scaleup.mp4" type="video/mp4">
+<track kind="captions" />
 </video>
 </center>
 
