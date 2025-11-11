@@ -501,8 +501,14 @@ a:hover .sparkle:nth-child(8) { animation: sparkle 1.5s ease-in-out infinite 1.4
 }
 </style>
 
+<!-- Safely embed JSON data in a script tag -->
+<script type="application/json" id="apps-data">
+{{ apps|tojson }}
+</script>
+
 <script>
-const APPS_DICT = JSON.parse('{{ apps|tojson|safe }}');
+// Parse the JSON data from the script tag
+const APPS_DICT = JSON.parse(document.getElementById('apps-data').textContent);
 const ALL_APPS = Object.keys(APPS_DICT);
 
 // Sort apps to put featured ones first
