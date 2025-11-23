@@ -39,14 +39,42 @@ python3 -m venv venv && source venv/bin/activate && pip install -r requirements.
 
 ### Deploy
 
-To deploy to Modal, copy `.env.example` to a file called `.env` and add your `ANTHROPIC_API_KEY`.
-Also, create a [Modal Secret](https://modal.com/docs/guide/secrets) called `anthropic-secret` so our applications can access it.
+To deploy Modal Vibe to Modal, follow these steps:
 
-Then, deploy the application with Modal:
+1. **Set up environment variables:**
 
-```bash
-modal deploy -m main
-```
+   Copy `.env.example` to `.env`.
+
+   Edit your `.env` file and provide values for:
+   - `ANTHROPIC_API_KEY`
+   - `ADMIN_SECRET`
+
+2. **Configure Modal Secrets:**
+
+   - Create a [Modal Secret](https://modal.com/docs/guide/secrets) named `anthropic-secret` containing your `ANTHROPIC_API_KEY`.
+   - Create a Modal Secret named `admin-secret` containing your `ADMIN_SECRET`.
+
+   These steps ensure your app has secure access to environment credentials on Modal.
+
+3. **Deploy the application:**
+
+    ```bash
+   modal deploy -m main
+   ```
+
+   **Note:** If your account is not on Modal's Team or Enterprise plan, you won't be able to use custom domain from the FastAPI function in `main.py`:
+
+   ```python
+   @app.function(
+       image=image,
+       secrets=[modal.Secret.from_name("anthropic-secret")],
+       min_containers=1
+   )
+   @modal.concurrent(max_inputs=100)
+   @modal.asgi_app(custom_domains=["vibes.modal.chat"])  # REMOVE CUSTOM DOMAINS ARGUMENT IF NO ACCESS
+   def fastapi_app():
+       ...
+   ```
 
 ### Local Development
 
