@@ -11,7 +11,7 @@ def get_llm_client():
     return AsyncAnthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
 
 
-async def generate_response(client, prompt, model="claude-sonnet-4-20250514", max_tokens=8192, temperature=0.5):
+async def generate_response(client, prompt, model="claude-sonnet-4-6", max_tokens=8192, temperature=0.5):
     message = await client.messages.create(
         model=model,
         messages=[{"role": "user", "content": prompt}],

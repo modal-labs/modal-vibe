@@ -47,7 +47,7 @@ async def _explain_init_edit(
     explanation = await generate_response(
         client,
         prompt,
-        model="claude-3-5-haiku-20241022",
+        model="claude-haiku-4-5-20251001",
         max_tokens=64,
     )
     return explanation
@@ -112,7 +112,7 @@ async def _explain_followup_edit(client: anthropic.Anthropic, message: str, orig
     explanation = await generate_response(
         client,
         prompt,
-        model="claude-3-5-haiku-20241022",
+        model="claude-haiku-4-5-20251001",
         max_tokens=64,
     )
     return explanation
