@@ -144,13 +144,13 @@ def fastapi_app():
     @web_app.exception_handler(404)
     async def not_found_handler(request: Request, exc):
         return templates.TemplateResponse(
-            name="pages/404.html", context={"request": request}, status_code=404
+            request=request, name="pages/404.html", status_code=404
         )
 
     @web_app.exception_handler(503)
     async def service_unavailable_handler(request: Request, exc):
         return templates.TemplateResponse(
-            name="pages/503.html", context={"request": request}, status_code=503
+            request=request, name="pages/503.html", status_code=503
         )
 
     @web_app.get("/")
@@ -158,7 +158,7 @@ def fastapi_app():
         print("Fetching home page")
         apps_dict = await _get_apps_dict()
         return templates.TemplateResponse(
-            name="pages/home.html", context={"request": request, "apps": apps_dict}
+            request=request, name="pages/home.html", context={"apps": apps_dict}
         )
 
     async def _get_apps_dict():
@@ -183,9 +183,9 @@ def fastapi_app():
     async def app_page(request: Request, app_id: str):
         app = _get_app_or_raise(app_id)
         return templates.TemplateResponse(
+            request=request,
             name="pages/app.html",
             context={
-                "request": request,
                 "app_id": app_id,
                 "app_url": app.data.sandbox_user_tunnel_url,
                 "relay_url": app.data.sandbox_tunnel_url,
